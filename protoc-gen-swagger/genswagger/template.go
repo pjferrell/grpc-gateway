@@ -96,6 +96,26 @@ func queryParams(message *descriptor.Message, field *descriptor.Field, prefix st
 			return nil, nil
 		}
 	}
+
+	if msg, err := reg.LookupMsg("", field.GetTypeName()); err == nil && mimicsPrimitiveType(msg) {
+		s, err := extractSchemaOptionFromMessageDescriptor(msg.DescriptorProto)
+		if err != nil {
+			return nil, err
+		}
+
+		t, f := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+
+		param := swaggerParameterObject{
+			Name:        field.GetName(),
+			In:          "query",
+			Type:        t,
+			Format:      f,
+			Description: s.GetJsonSchema().GetDescription(),
+		}
+
+		return []swaggerParameterObject{param}, nil
+	}
+
 	schema := schemaOfField(field, reg, nil)
 	fieldType := field.GetTypeName()
 	if message.File != nil {
@@ -172,8 +192,9 @@ func findServicesMessagesAndEnumerations(s []*descriptor.Service, reg *descripto
 			if _, ok := refs[fmt.Sprintf("#/definitions/%s", fullyQualifiedNameToSwaggerName(meth.RequestType.FQMN(), reg))]; ok {
 				m[fullyQualifiedNameToSwaggerName(meth.RequestType.FQMN(), reg)] = meth.RequestType
 			}
-			findNestedMessagesAndEnumerations(meth.RequestType, reg, m, e)
 
+
+			findNestedMessagesAndEnumerations(meth.RequestType, reg, m, e)
 			m[fullyQualifiedNameToSwaggerName(meth.ResponseType.FQMN(), reg)] = meth.ResponseType
 			findNestedMessagesAndEnumerations(meth.ResponseType, reg, m, e)
 		}
@@ -197,11 +218,34 @@ func findNestedMessagesAndEnumerations(message *descriptor.Message, reg *descrip
 					e[fieldType] = enum
 					continue
 				}
+				if mimicsPrimitiveType(msg) {
+					continue
+				}
 				m[fieldType] = msg
 				findNestedMessagesAndEnumerations(msg, reg, m, e)
 			}
 		}
 	}
+}
+
+func mimicsPrimitiveType(message *descriptor.Message) bool {
+	s, err := extractSchemaOptionFromMessageDescriptor(message.DescriptorProto)
+	if err != nil {
+		return false
+	}
+
+	if _, ok := wktSchemas[s.GetJsonSchema().GetRef()]; ok {
+		return true
+	}
+
+	t, _ := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+
+	// FIXME: should array be treated as a primitive type?
+	if t == "" || t == "object" || t == "unknown" || t == "array" {
+		return false
+	}
+
+	return true
 }
 
 func renderMessagesAsDefinition(messages messageMap, d swaggerDefinitionsObject, reg *descriptor.Registry, customRefs refMap) {
@@ -230,6 +274,7 @@ func renderMessagesAsDefinition(messages messageMap, d swaggerDefinitionsObject,
 		case ".google.protobuf.BoolValue":
 			continue
 		}
+
 		if opt := msg.GetOptions(); opt != nil && opt.MapEntry != nil && *opt.MapEntry {
 			continue
 		}
@@ -278,9 +323,11 @@ func renderMessagesAsDefinition(messages messageMap, d swaggerDefinitionsObject,
 
 		for _, f := range msg.Fields {
 			fieldValue := schemaOfField(f, reg, customRefs)
-			comments := fieldProtoComments(reg, msg, f)
-			if err := updateSwaggerDataFromComments(&fieldValue, comments); err != nil {
-				panic(err)
+			if fieldValue.Description == "" {
+				comments := fieldProtoComments(reg, msg, f)
+				if err := updateSwaggerDataFromComments(&fieldValue, comments); err != nil {
+					panic(err)
+				}
 			}
 
 			schema.Properties = append(schema.Properties, keyVal{f.GetName(), fieldValue})
@@ -316,6 +363,14 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) s
 	case pbdescriptor.FieldDescriptorProto_TYPE_ENUM, pbdescriptor.FieldDescriptorProto_TYPE_MESSAGE, pbdescriptor.FieldDescriptorProto_TYPE_GROUP:
 		if wktSchema, ok := wktSchemas[fd.GetTypeName()]; ok {
 			core = wktSchema
+		} else if msg, err := reg.LookupMsg("", fd.GetTypeName()); err == nil && mimicsPrimitiveType(msg) {
+			s, _ := extractSchemaOptionFromMessageDescriptor(msg.DescriptorProto)
+			t, f := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+			core = schemaCore{
+				Type: t,
+				Format: f,
+			}
+			return swaggerSchemaObject{schemaCore: core, Description: s.GetJsonSchema().GetDescription()}
 		} else {
 			core = schemaCore{
 				Ref: "#/definitions/" + fullyQualifiedNameToSwaggerName(fd.GetTypeName(), reg),
@@ -1413,7 +1468,7 @@ func addCustomRefs(d swaggerDefinitionsObject, reg *descriptor.Registry, refs re
 			continue
 		}
 		msg, err := reg.LookupMsg("", ref)
-		if err == nil {
+		if err == nil || !mimicsPrimitiveType(msg) {
 			msgMap[fullyQualifiedNameToSwaggerName(ref, reg)] = msg
 			continue
 		}
