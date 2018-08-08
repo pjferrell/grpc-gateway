@@ -120,11 +120,19 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGenerato
 
 	if g.reg.IsAllowMerge() {
 		targetSwagger := mergeTargetFile(swaggers, g.reg.GetMergeFileName())
-		files = append(files, encodeSwagger(targetSwagger))
+		resFile := encodeSwagger(targetSwagger)
+		if g.reg.IsAtlasPatch() {
+			resFile.Content = proto.String(atlasSwagger([]byte(*resFile.Content)))
+		}
+		files = append(files, resFile)
 		glog.V(1).Infof("New swagger file will emit")
 	} else {
 		for _, file := range swaggers {
-			files = append(files, encodeSwagger(file))
+			resFile := encodeSwagger(file)
+			if g.reg.IsAtlasPatch() {
+				resFile.Content = proto.String(atlasSwagger([]byte(*resFile.Content)))
+			}
+			files = append(files, resFile)
 			glog.V(1).Infof("New swagger file will emit")
 		}
 	}

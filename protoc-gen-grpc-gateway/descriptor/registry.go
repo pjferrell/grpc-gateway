@@ -44,6 +44,9 @@ type Registry struct {
 	// allowMerge generation one swagger file out of multiple protos
 	allowMerge bool
 
+	// atlasPatch ...
+	atlasPatch bool
+
 	// mergeFileName target swagger file name after merge
 	mergeFileName string
 }
@@ -311,6 +314,15 @@ func (r *Registry) SetAllowMerge(allow bool) {
 // IsAllowMerge whether generation one swagger file out of multiple protos
 func (r *Registry) IsAllowMerge() bool {
 	return r.allowMerge
+}
+
+// IsAtlasPatch whether generation is followed by atlas-patch changes.
+func (r *Registry) IsAtlasPatch() bool {
+	return r.atlasPatch
+}
+
+func (r *Registry) SetAtlasPatch(atlas bool) {
+	r.atlasPatch = atlas
 }
 
 // SetMergeFileName controls the target swagger file name out of multiple protos
