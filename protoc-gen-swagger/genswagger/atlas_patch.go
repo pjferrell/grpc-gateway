@@ -187,7 +187,9 @@ func atlasSwagger(b []byte) string {
 
 					delete(op.Responses.StatusCodeResponses, 200)
 
-					rsp.Description = fmt.Sprintf("%s %s response", strings.Join(op.Tags, ""), op.ID)
+					if rsp.Description == "" {
+						rsp.Description = on + " operation response"
+					}
 
 					op.Responses.StatusCodeResponses[opToCode(on)] = rsp
 				}
