@@ -271,6 +271,18 @@ func checkRecursion(s spec.Schema, r spec.Ref, path []string) spec.Ref {
 			}
 		}
 
+		// TBD: common pattern.
+		if np == "created_time" || np == "updated_time" || np == "id" {
+			p.ReadOnly = true
+		}
+
+		// FIXME: copy additionalProperties as-is.
+		if addProps := p.AdditionalProperties; addProps != nil {
+			if addProps.Schema != nil && !isNilRef(addProps.Schema.Ref) {
+				seenRefs[trim(addProps.Schema.Ref)] = true
+			}
+		}
+
 		newProps[np] = p
 
 		sr := getPropRef(p)
