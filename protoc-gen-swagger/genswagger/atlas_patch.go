@@ -40,7 +40,7 @@ func atlasSwagger(b []byte) string {
 	for pn, pi := range sw.Paths.Paths {
 		pnElements := []string{}
 		for _, v := range strings.Split(pn, "/") {
-			if strings.HasSuffix(v, "id.resource_id}") {
+			if strings.HasSuffix(v, "id.resource_id}") || strings.HasSuffix(v, ".id}") {
 				pnElements = append(pnElements, "{id}")
 			} else {
 				pnElements = append(pnElements, v)
