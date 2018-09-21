@@ -408,7 +408,7 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) s
 			schemaCore: core,
 		}
 		if j, err := extractJSONSchemaFromFieldDescriptor(fd); err == nil {
-			updateSwaggerObjectFromJSONSchema(&ret, j)
+			updateSwaggerObjectFromJSONSchema(&ret, j, reg)
 		}
 		return ret
 	}
@@ -1371,7 +1371,7 @@ func protoJSONSchemaToSwaggerSchemaCore(j *swagger_options.JSONSchema, reg *desc
 			ret.Ref += j.GetRef()
 		}
 	} else {
-		f, t := protoJSONSchemaTypeToFormat(j.GetType())
+		t, f := protoJSONSchemaTypeToFormat(j.GetType())
 		ret.Format = f
 		ret.Type = t
 	}
@@ -1379,7 +1379,7 @@ func protoJSONSchemaToSwaggerSchemaCore(j *swagger_options.JSONSchema, reg *desc
 	return ret
 }
 
-func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_options.JSONSchema) {
+func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_options.JSONSchema, reg *descriptor.Registry) {
 	s.Title = j.GetTitle()
 	s.Description = j.GetDescription()
 	s.MultipleOf = j.GetMultipleOf()
@@ -1396,6 +1396,32 @@ func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_option
 	s.MaxProperties = j.GetMaxProperties()
 	s.MinProperties = j.GetMinProperties()
 	s.Required = j.GetRequired()
+
+
+	if arr := j.GetArray(); len(arr) > 0 {
+		s.Type = "array"
+		for _, e := range arr {
+			if v, ok := wktSchemas[e]; ok {
+				s.Items = (*swaggerItemsObject)(&v)
+				s.Ref = ""
+				break
+			} else if swaggerName := fullyQualifiedNameToSwaggerName(e, reg); swaggerName != "" {
+				s.Items = (*swaggerItemsObject)(&schemaCore{Type: "object", Ref: "#/definitions/" + swaggerName})
+				s.Ref = ""
+				break
+			} else {
+				panic("Must be either valid reference or primitive type")
+			}
+		}
+	} else if t, f := protoJSONSchemaTypeToFormat(j.GetType()); t != "" {
+		s.Type = t
+		s.Format = f
+	} else if j.GetRef() != "" {
+		ref := fullyQualifiedNameToSwaggerName(j.GetRef(), reg)
+		if ref != "" {
+			s.Ref = "#/definitions/" + ref
+		}
+	}
 }
 
 func swaggerSchemaFromProtoSchema(s *swagger_options.Schema, reg *descriptor.Registry, refs refMap) swaggerSchemaObject {
@@ -1404,7 +1430,7 @@ func swaggerSchemaFromProtoSchema(s *swagger_options.Schema, reg *descriptor.Reg
 	}
 
 	ret.schemaCore = protoJSONSchemaToSwaggerSchemaCore(s.GetJsonSchema(), reg, refs)
-	updateSwaggerObjectFromJSONSchema(&ret, s.GetJsonSchema())
+	updateSwaggerObjectFromJSONSchema(&ret, s.GetJsonSchema(), reg)
 
 	return ret
 }
