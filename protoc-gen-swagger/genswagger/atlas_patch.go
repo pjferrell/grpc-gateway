@@ -124,7 +124,7 @@ The service-defined string used to identify a page of resources. A null value in
 					default:
 					}
 					// Replace resource_id with id
-				} else if strings.HasSuffix(param.Name, "id.resource_id") {
+				} else if strings.HasSuffix(param.Name, "id.resource_id") || strings.HasSuffix(param.Name, ".id") {
 					param.Name = "id"
 					fixedParams = append(fixedParams, param)
 				} else {
