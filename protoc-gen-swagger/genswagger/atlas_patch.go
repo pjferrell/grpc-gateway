@@ -3,7 +3,7 @@ package genswagger
 // This patch is introduced for several cases that are applicable in
 // atlas-app-toolkit:
 //
-// - Ability to wrap Responses with correct error codes (200, 201, 202, 203)
+// - Ability to wrap Responses with correct error codes (200 - for GET, 201 - for POST/PUT/PATCH, 204 - for DELETE)
 //
 // - Ability to identify and append correct documentation with atlas.app.toolkit
 // special types: filtering, sorting, paging, field_selection, atlas.rpc.identifier.
@@ -373,9 +373,9 @@ func opToCode(on string) int {
 	return map[string]int{
 		"GET":    200,
 		"POST":   201,
-		"PUT":    202,
-		"PATCH":  202,
-		"DELETE": 203,
+		"PUT":    201,
+		"PATCH":  201,
+		"DELETE": 204,
 	}[on]
 }
 
