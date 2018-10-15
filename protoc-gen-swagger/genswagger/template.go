@@ -1396,6 +1396,7 @@ func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_option
 	s.MaxProperties = j.GetMaxProperties()
 	s.MinProperties = j.GetMinProperties()
 	s.Required = j.GetRequired()
+	s.ReadOnly = j.GetReadOnly()
 
 
 	if arr := j.GetArray(); len(arr) > 0 {
