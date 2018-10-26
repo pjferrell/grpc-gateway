@@ -26,7 +26,7 @@ var (
 	seenRefs = map[string]bool{}
 )
 
-func atlasSwagger(b []byte) string {
+func atlasSwagger(b []byte, withPrivateMethods bool) string {
 	if err := json.Unmarshal(b, &sw); err != nil {
 		fmt.Fprintf(os.Stderr, "error parsing JSON: %v\n", err)
 		os.Exit(1)
@@ -36,7 +36,7 @@ func atlasSwagger(b []byte) string {
 
 	refs := []spec.Ref{}
 	fixedPaths := map[string]spec.PathItem{}
-
+	privateMethodsOperations := make(map[string][]string, 0)
 	for pn, pi := range sw.Paths.Paths {
 		pnElements := []string{}
 		for _, v := range strings.Split(pn, "/") {
@@ -50,6 +50,11 @@ func atlasSwagger(b []byte) string {
 		for on, op := range pathItemAsMap(pi) {
 			if op == nil {
 				continue
+			}
+			if !withPrivateMethods {
+				if IsStringInSlice(op.OperationProps.Tags, "private") {
+					privateMethodsOperations[pn] = append(privateMethodsOperations[pn], on)
+				}
 			}
 
 			fixedParams := []spec.Parameter{}
@@ -228,6 +233,34 @@ The service-defined string used to identify a page of resources. A null value in
 		}
 	}
 
+	for pn, on := range privateMethodsOperations {
+		pi := sw.Paths.Paths[pn]
+		for _, operation := range on {
+			switch operation {
+			case "GET":
+				pi.Get = nil
+			case "POST":
+				pi.Post = nil
+			case "PUT":
+				pi.Put = nil
+			case "DELETE":
+				pi.Delete = nil
+			case "PATCH":
+				pi.Patch = nil
+			}
+		}
+
+		if IsPathEmpty(pi) {
+			delete(sw.Paths.Paths, pn)
+			continue
+		}
+
+		sw.Paths.Paths[pn] = pi
+	}
+
+	if !withPrivateMethods {
+		sw.Definitions = filterDefinitions()
+	}
 	bOut, err := json.MarshalIndent(sw, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error marshalling result: %v", err)
@@ -387,4 +420,91 @@ func opToStatus(on string) string {
 		"PATCH":  "UPDATED",
 		"DELETE": "DELETED",
 	}[on]
+}
+
+func IsStringInSlice(slice []string, str string) (bool) {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func IsPathEmpty(pi spec.PathItem) (bool) {
+	if pi.Get != nil || pi.Post != nil || pi.Put != nil || pi.Patch != nil || pi.Delete != nil {
+		return false
+	}
+	return true
+}
+
+func filterDefinitions() (newDefinitions spec.Definitions) {
+	marh, _ := sw.MarshalJSON()
+	v := map[string]interface{}{}
+	if err := json.Unmarshal(marh, &v); err != nil {
+		panic(err.Error())
+	}
+
+	defs := v["definitions"].(map[string]interface{})
+	newDefinitions = make(spec.Definitions)
+
+	for rk := range gatherRefs(v["paths"]) {
+		rName := refToName(rk)
+		newDefinitions[rName] = sw.Definitions[rName]
+		for rrName := range gatherDefinitionRefs(rk, defs) {
+			newDefinitions[rrName] = sw.Definitions[rrName]
+		}
+	}
+
+	return newDefinitions
+}
+
+func gatherDefinitionRefs(ref string, defs map[string]interface{}) map[string]struct{} {
+	var refs = map[string]struct{}{}
+
+	gatherDefinitionRefsAux(ref, defs, refs)
+	return refs
+}
+
+
+func gatherDefinitionRefsAux(ref string, defs map[string]interface{}, refs map[string]struct{}) {
+	if _, ok := refs[refToName(ref)]; ok {
+		return
+	}
+
+	for r := range gatherRefs(defs[refToName(ref)]) {
+		refs[refToName(r)] = struct{}{}
+		gatherDefinitionRefsAux(r, defs, refs)
+	}
+
+	return
+}
+
+func gatherRefs(v interface{}) map[string]struct{} {
+	refs := map[string]struct{}{}
+	switch v := v.(type) {
+	case map[string]interface{}:
+		for k, vv := range v {
+			if k == "$ref" {
+				refs[vv.(string)] = struct{}{}
+			}
+
+			for rk := range gatherRefs(vv) {
+				refs[rk] = struct{}{}
+			}
+		}
+	case []interface{}:
+		for _, vv := range v {
+			for rk, _ := range gatherRefs(vv) {
+				refs[rk] = struct{}{}
+			}
+		}
+	}
+
+	return refs
+}
+
+func refToName(ref string) string {
+	return strings.TrimPrefix(ref, "#/definitions/")
 }
