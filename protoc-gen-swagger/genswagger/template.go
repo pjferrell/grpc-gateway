@@ -390,12 +390,17 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) s
 
 	switch aggregate {
 	case array:
-		return swaggerSchemaObject{
+		ret := swaggerSchemaObject{
 			schemaCore: schemaCore{
 				Type:  "array",
 				Items: (*swaggerItemsObject)(&core),
 			},
 		}
+
+		if j, err := extractJSONSchemaFromFieldDescriptor(fd); err == nil {
+			updateSwaggerObjectFromJSONSchema(&ret, j, reg)
+		}
+		return ret
 	case object:
 		return swaggerSchemaObject{
 			schemaCore: schemaCore{
