@@ -366,9 +366,19 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) s
 		} else if msg, err := reg.LookupMsg("", fd.GetTypeName()); err == nil && mimicsPrimitiveType(msg) {
 			s, _ := extractSchemaOptionFromMessageDescriptor(msg.DescriptorProto)
 			t, f := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
-			core = schemaCore{
-				Type: t,
-				Format: f,
+			if aggregate == array {
+				core = schemaCore{
+					Type: "array",
+					Format: f,
+					Items: &swaggerItemsObject{
+						Type:t,
+					},
+				}
+			}else {
+				core = schemaCore{
+					Type:   t,
+					Format: f,
+				}
 			}
 			return swaggerSchemaObject{schemaCore: core, Description: s.GetJsonSchema().GetDescription()}
 		} else {
