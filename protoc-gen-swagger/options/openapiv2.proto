@@ -5,6 +5,7 @@ package grpc.gateway.protoc_gen_swagger.options;
 option go_package = "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options";
 
 import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 // `Swagger` is a representation of OpenAPI v2 specification's Swagger object.
 //
@@ -160,8 +161,7 @@ message JSONSchema {
   string description = 6;
   string default = 7;
   bool read_only = 8;
-  // field 9 is reserved for 'examples', which is omitted from OpenAPI v2 in favor of 'example' field.
-  reserved 9;
+  google.protobuf.Value example = 9;
   double multiple_of = 10;
   double maximum = 11;
   bool exclusive_maximum = 12;

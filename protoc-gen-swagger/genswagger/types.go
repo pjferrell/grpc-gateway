@@ -220,6 +220,7 @@ type swaggerSchemaObject struct {
 	MinProperties    uint64   `json:"min_properties,omitempty"`
 	Required         []string `json:"required,omitempty"`
 	ReadOnly         bool     `json:"readOnly,omitempty"`
+	Example          interface{} `json:"example,omitempty"`
 }
 
 // http://swagger.io/specification/#referenceObject

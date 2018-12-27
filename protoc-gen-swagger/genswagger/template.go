@@ -2,6 +2,7 @@ package genswagger
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/ptypes/struct"
 	"os"
 	"reflect"
 	"regexp"
@@ -1422,6 +1423,7 @@ func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_option
 	s.MinProperties = j.GetMinProperties()
 	s.Required = j.GetRequired()
 	s.ReadOnly = j.GetReadOnly()
+	s.Example  = protobufValueToInterface(j.GetExample())
 
 
 	if arr := j.GetArray(); len(arr) > 0 {
@@ -1449,6 +1451,31 @@ func updateSwaggerObjectFromJSONSchema(s *swaggerSchemaObject, j *swagger_option
 		}
 	}
 }
+
+func protobufValueToInterface(v *structpb.Value) (interface{}) {
+	if v == nil {
+		return nil
+	}
+
+	switch v.GetKind().(type) {
+
+	case *structpb.Value_NullValue:
+		return v.GetNullValue()
+	case *structpb.Value_BoolValue:
+		return v.GetBoolValue()
+	case *structpb.Value_StringValue:
+		return v.GetStringValue()
+	case *structpb.Value_NumberValue:
+		return v.GetNumberValue()
+	case *structpb.Value_StructValue:
+		return v.GetStructValue()
+	case *structpb.Value_ListValue:
+		return v.GetListValue()
+	default:
+		return nil
+	}
+}
+
 
 func swaggerSchemaFromProtoSchema(s *swagger_options.Schema, reg *descriptor.Registry, refs refMap) swaggerSchemaObject {
 	ret := swaggerSchemaObject{
