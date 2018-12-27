@@ -1458,6 +1458,21 @@ func protobufValueToInterface(v *structpb.Value) (interface{}) {
 	}
 
 	switch v.GetKind().(type) {
+	case *structpb.Value_ListValue:
+		values := make([]interface{}, 0)
+		for _, v := range v.GetListValue().Values {
+			values = append(values, PBValueToInterface(v))
+		}
+
+		return values
+	default:
+		return PBValueToInterface(v)
+	}
+}
+
+func PBValueToInterface(v *structpb.Value) (interface{}) {
+
+	switch t := v.GetKind().(type) {
 
 	case *structpb.Value_NullValue:
 		return v.GetNullValue()
@@ -1467,15 +1482,12 @@ func protobufValueToInterface(v *structpb.Value) (interface{}) {
 		return v.GetStringValue()
 	case *structpb.Value_NumberValue:
 		return v.GetNumberValue()
-	case *structpb.Value_StructValue:
-		return v.GetStructValue()
-	case *structpb.Value_ListValue:
-		return v.GetListValue()
+	case *structpb.Value_StructValue, *structpb.Value_ListValue:
+		panic(fmt.Sprintf("%q value unsupported for \"example\" annotation", t))
 	default:
 		return nil
 	}
 }
-
 
 func swaggerSchemaFromProtoSchema(s *swagger_options.Schema, reg *descriptor.Registry, refs refMap) swaggerSchemaObject {
 	ret := swaggerSchemaObject{
