@@ -51,15 +51,16 @@ Patch includes following changes:
    
    * Provide couple annotations for replacing values in swagger schema 
      - ```@example``` annotation can be used for replacing default example with custom one
-      support few value types includes float64, string, map[string]interface{}, []float64, []string
+      support few value types includes float64, string, map[string]interface{}, []map[string]interface{} []float64, []string
        - ```@example 5.0```
-       - ```@example Internal error```
+       - ```@example "Internal error"```
        - ```@example {"Location": "Tacoma"}```
        - ```@example ["First", "Second"]```
        - ```@example [1, 5, 44]```
+       - ```@example [{"Location": "Tacoma"}, {"Group": "Engineering"}]```
      
      - ```@title``` annotation can be used for replacing default title with custom one
-       - ```@title StringCondition```
+       - ```@title "StringCondition"```
       
     If you example too long to be presented on one line you could use multiple lines annotation
     ```

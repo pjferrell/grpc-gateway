@@ -616,10 +616,12 @@ func getAnnotationValue(comment, prefix string) (interface{}, bool) {
 			res, err = parseMap(value)
 		} else if strings.HasPrefix(value, "[") {
 			res, err = parseSlice(value)
+		} else if strings.HasPrefix(value, `"`) {
+			res = strings.Trim(value, `"`)
 		} else if rInt, err := strconv.Atoi(value); err == nil {
 			res = rInt
 		} else {
-			res = value
+			log.Fatalf("Unexpected value for example: %s", value)
 		}
 
 		if err != nil {
@@ -661,11 +663,14 @@ func parseSlice(custom string) (interface{}, error) {
 	var (
 		rInt []float64
 		rStr []string
+		rMap []map[string]interface{}
 
 		raw = []byte(custom)
 	)
 
-	if err := json.Unmarshal(raw, &rInt); err == nil {
+	if err := json.Unmarshal(raw, &rMap); err == nil {
+		return rMap, nil
+	} else if err := json.Unmarshal(raw, &rInt); err == nil {
 		return rInt, nil
 	} else if err := json.Unmarshal(raw, &rStr); err == nil {
 		return rStr, nil
