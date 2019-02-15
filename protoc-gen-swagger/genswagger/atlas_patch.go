@@ -18,7 +18,6 @@ import (
 	"github.com/go-openapi/spec"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -608,28 +607,18 @@ func getAnnotationValue(comment, prefix string) (interface{}, bool) {
 
 	if value != "" {
 		var (
-			res interface{}
-			err error
+			raw json.RawMessage
 		)
 
-		if strings.HasPrefix(value, "{") {
-			res, err = parseMap(value)
-		} else if strings.HasPrefix(value, "[") {
-			res, err = parseSlice(value)
-		} else if strings.HasPrefix(value, `"`) {
-			res = strings.Trim(value, `"`)
-		} else if rInt, err := strconv.Atoi(value); err == nil {
-			res = rInt
-		} else {
-			log.Fatalf("Unexpected value for example: %s", value)
-		}
+		if err := json.Unmarshal([]byte(value), &raw); err == nil {
+			res, err := messageWalk(raw)
+			if err != nil {
+				log.Println(err.Error())
+				return nil, false
+			}
 
-		if err != nil {
-			log.Println(err.Error())
-			return nil, false
+			return res, true
 		}
-
-		return res, true
 	}
 
 	return nil, false
@@ -649,32 +638,39 @@ func stringPosition(strings []string, str string, start int) (pos int) {
 	return -1
 }
 
-func parseMap(custom string) (map[string]interface{}, error) {
-	r := make(map[string]interface{})
-
-	if err := json.Unmarshal([]byte(custom), &r); err != nil {
-		return nil, err
-	}
-
-	return r, nil
-}
-
-func parseSlice(custom string) (interface{}, error) {
+func messageWalk(j json.RawMessage) (interface{}, error) {
 	var (
-		rInt []float64
-		rStr []string
-		rMap []map[string]interface{}
-
-		raw = []byte(custom)
+		mapVal   map[string]json.RawMessage
+		sliceVal []json.RawMessage
+		strVal   string
+		numVal   float64
 	)
 
-	if err := json.Unmarshal(raw, &rMap); err == nil {
-		return rMap, nil
-	} else if err := json.Unmarshal(raw, &rInt); err == nil {
-		return rInt, nil
-	} else if err := json.Unmarshal(raw, &rStr); err == nil {
-		return rStr, nil
+	if err := json.Unmarshal(j, &mapVal); err == nil {
+		res := make(map[string]interface{}, len(mapVal))
+		for k, v := range mapVal {
+			if res[k], err = messageWalk(v); err != nil {
+				return nil, err
+			}
+		}
+
+		return res, nil
+	} else if err := json.Unmarshal(j, &sliceVal); err == nil {
+		res := make([]interface{}, len(sliceVal))
+		for k, v := range sliceVal {
+			if res[k], err = messageWalk(v); err != nil {
+				return nil, err
+			}
+		}
+
+		return res, nil
+	} else if err := json.Unmarshal(j, &numVal); err == nil {
+		return numVal, nil
+	} else if err := json.Unmarshal(j, &strVal); err == nil {
+		return strVal, nil
 	} else {
-		return nil, err
+		return nil, fmt.Errorf("unsuported message type")
 	}
+
+	return nil, nil
 }
