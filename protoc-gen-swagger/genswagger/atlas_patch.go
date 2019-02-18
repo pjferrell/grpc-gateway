@@ -14,11 +14,16 @@ package genswagger
 
 import (
 	"encoding/json"
-	"github.com/go-openapi/spec"
-
 	"fmt"
+	"github.com/go-openapi/spec"
+	"log"
 	"os"
 	"strings"
+)
+
+const (
+	titleAnnotation   = "@title"
+	exampleAnnotation = "@example"
 )
 
 var (
@@ -26,7 +31,7 @@ var (
 	seenRefs = map[string]bool{}
 )
 
-func atlasSwagger(b []byte, withPrivateMethods bool) string {
+func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) string {
 	if err := json.Unmarshal(b, &sw); err != nil {
 		fmt.Fprintf(os.Stderr, "error parsing JSON: %v\n", err)
 		os.Exit(1)
@@ -34,11 +39,11 @@ func atlasSwagger(b []byte, withPrivateMethods bool) string {
 
 	// Fix collection operators and IDs and gather refs along Paths.
 
-	refs := []spec.Ref{}
+	var refs []spec.Ref
 	fixedPaths := map[string]spec.PathItem{}
 	privateMethodsOperations := make(map[string][]string, 0)
 	for pn, pi := range sw.Paths.Paths {
-		pnElements := []string{}
+		var pnElements []string
 		for _, v := range strings.Split(pn, "/") {
 			if strings.HasSuffix(v, "id.resource_id}") || strings.HasSuffix(v, ".id}") {
 				pnElements = append(pnElements, "{id}")
@@ -57,7 +62,7 @@ func atlasSwagger(b []byte, withPrivateMethods bool) string {
 				}
 			}
 
-			fixedParams := []spec.Parameter{}
+			var fixedParams []spec.Parameter
 			for _, param := range op.Parameters {
 
 				// Fix Collection Operators
@@ -267,6 +272,11 @@ The service-defined string used to identify a page of resources. A null value in
 	if !withPrivateMethods {
 		sw.Definitions = filterDefinitions()
 	}
+
+	if withCustomAnnotations {
+		sw.Definitions = applyCustomAnnotations(sw.Definitions)
+	}
+
 	bOut, err := json.MarshalIndent(sw, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error marshalling result: %v", err)
@@ -428,7 +438,7 @@ func opToTextCode(on string) string {
 	}[on]
 }
 
-func IsStringInSlice(slice []string, str string) (bool) {
+func IsStringInSlice(slice []string, str string) bool {
 	for _, v := range slice {
 		if v == str {
 			return true
@@ -438,7 +448,7 @@ func IsStringInSlice(slice []string, str string) (bool) {
 	return false
 }
 
-func IsPathEmpty(pi spec.PathItem) (bool) {
+func IsPathEmpty(pi spec.PathItem) bool {
 	if pi.Get != nil || pi.Post != nil || pi.Put != nil || pi.Patch != nil || pi.Delete != nil {
 		return false
 	}
@@ -471,7 +481,6 @@ func gatherDefinitionRefs(ref string, defs map[string]interface{}) map[string]st
 	gatherDefinitionRefsAux(refToName(ref), defs, refs)
 	return refs
 }
-
 
 func gatherDefinitionRefsAux(ref string, defs map[string]interface{}, refs map[string]struct{}) {
 	for r := range gatherRefs(defs[ref]) {
@@ -508,4 +517,162 @@ func gatherRefs(v interface{}) map[string]struct{} {
 
 func refToName(ref string) string {
 	return strings.TrimPrefix(ref, "#/definitions/")
+}
+
+func applyCustomAnnotations(defs spec.Definitions) spec.Definitions {
+	for k, v := range defs {
+		v.Description = v.Title + v.Description
+		v.Title = ""
+
+		if title, ok := getAnnotationValue(v.Description, titleAnnotation); ok {
+			v.Title, ok = title.(string)
+			if !ok {
+				log.Printf("unsupported title type in %s\n", v.Type)
+			}
+
+			v.Description = removeSpecials(v.Description, titleAnnotation)
+
+			defs[k] = v
+		}
+
+		if example, ok := getAnnotationValue(v.Description, exampleAnnotation); ok {
+			v.Example = example
+			v.Description = removeSpecials(v.Description, exampleAnnotation)
+
+			defs[k] = v
+		}
+
+		for fk, fv := range v.Properties {
+			fv.Description = fv.Title + fv.Description
+			fv.Title = ""
+
+			if example, ok := getAnnotationValue(fv.Description, exampleAnnotation); ok {
+				fv.Example = example
+				fv.Description = removeSpecials(fv.Description, exampleAnnotation)
+
+				defs[k].Properties[fk] = fv
+			}
+		}
+
+		if v.Definitions != nil {
+			v.Definitions = applyCustomAnnotations(v.Definitions)
+		}
+	}
+
+	return defs
+}
+
+func removeSpecials(comment, annotation string) (res string) {
+	lines := strings.Split(comment, "\n")
+	for i := 0; i < len(lines); i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(trimmed, annotation) && strings.HasSuffix(trimmed, "<<<EOF") {
+			pos := stringPosition(lines, "EOF", i)
+			if pos != -1 && pos < len(lines) {
+				lines = append(lines[:i], lines[pos+1:]...)
+			}
+			lines = append(lines[:i])
+
+		} else if strings.HasPrefix(trimmed, annotation) {
+			lines = append(lines[:i], lines[i+1:]...)
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func getAnnotationValue(comment, prefix string) (interface{}, bool) {
+	var (
+		value string
+		lines = strings.Split(comment, "\n")
+	)
+
+	for i := 0; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+
+		if strings.HasPrefix(line, prefix) && strings.HasSuffix(line, "<<<EOF") {
+			pos := stringPosition(lines, "EOF", i)
+			if pos != -1 && pos < len(lines) {
+				value = strings.Join(lines[i+1:pos], "\n")
+			} else {
+				value = strings.Join(lines[i+1:], "\n")
+			}
+
+		} else if strings.HasPrefix(line, prefix) {
+			value = strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+
+		if value != "" {
+			break
+		}
+	}
+
+	if value != "" {
+		var (
+			raw json.RawMessage
+		)
+
+		if err := json.Unmarshal([]byte(value), &raw); err == nil {
+			res, err := messageWalk(raw)
+			if err != nil {
+				log.Println(err.Error())
+				return nil, false
+			}
+
+			return res, true
+		}
+	}
+
+	return nil, false
+}
+
+func stringPosition(strings []string, str string, start int) (pos int) {
+	if start >= len(strings) {
+		return -1
+	}
+
+	for i := start; i < len(strings); i++ {
+		if str == strings[i] {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func messageWalk(j json.RawMessage) (interface{}, error) {
+	var (
+		mapVal   map[string]json.RawMessage
+		sliceVal []json.RawMessage
+		strVal   string
+		numVal   float64
+	)
+
+	if err := json.Unmarshal(j, &mapVal); err == nil {
+		res := make(map[string]interface{}, len(mapVal))
+		for k, v := range mapVal {
+			if res[k], err = messageWalk(v); err != nil {
+				return nil, err
+			}
+		}
+
+		return res, nil
+	} else if err := json.Unmarshal(j, &sliceVal); err == nil {
+		res := make([]interface{}, len(sliceVal))
+		for k, v := range sliceVal {
+			if res[k], err = messageWalk(v); err != nil {
+				return nil, err
+			}
+		}
+
+		return res, nil
+	} else if err := json.Unmarshal(j, &numVal); err == nil {
+		return numVal, nil
+	} else if err := json.Unmarshal(j, &strVal); err == nil {
+		return strVal, nil
+	} else {
+		return nil, fmt.Errorf("unsuported message type")
+	}
+
+	return nil, nil
 }

@@ -15,14 +15,15 @@ import (
 )
 
 var (
-	importPrefix         = flag.String("import_prefix", "", "prefix to be added to go package paths for imported proto files")
-	file                 = flag.String("file", "-", "where to load data from")
-	allowDeleteBody      = flag.Bool("allow_delete_body", false, "unless set, HTTP DELETE methods may not have a body")
-	grpcAPIConfiguration = flag.String("grpc_api_configuration", "", "path to gRPC API Configuration in YAML format")
-	allowMerge           = flag.Bool("allow_merge", false, "if set, generation one swagger file out of multiple protos")
-	mergeFileName        = flag.String("merge_file_name", "apidocs", "target swagger file name prefix after merge")
-	atlasPatch           = flag.Bool("atlas_patch", false, "if set, generation will be proceded with atlas-patch changes")
-	withPrivate          = flag.Bool("with_private", false, "if unset, generate swagger schema without operations 0 as 'private' work only if atlas_patch set")
+	importPrefix          = flag.String("import_prefix", "", "prefix to be added to go package paths for imported proto files")
+	file                  = flag.String("file", "-", "where to load data from")
+	allowDeleteBody       = flag.Bool("allow_delete_body", false, "unless set, HTTP DELETE methods may not have a body")
+	grpcAPIConfiguration  = flag.String("grpc_api_configuration", "", "path to gRPC API Configuration in YAML format")
+	allowMerge            = flag.Bool("allow_merge", false, "if set, generation one swagger file out of multiple protos")
+	mergeFileName         = flag.String("merge_file_name", "apidocs", "target swagger file name prefix after merge")
+	atlasPatch            = flag.Bool("atlas_patch", false, "if set, generation will be proceded with atlas-patch changes")
+	withPrivate           = flag.Bool("with_private", false, "if unset, generate swagger schema without operations 0 as 'private' work only if atlas_patch set")
+	withCustomAnnotations = flag.Bool("with_custom_annotations", false, "if set, you became available to use custom annotations")
 )
 
 func main() {
@@ -59,6 +60,7 @@ func main() {
 	reg.SetAllowMerge(*allowMerge)
 	reg.SetAtlasPatch(*atlasPatch)
 	reg.SetWithPrivateOperations(*withPrivate)
+	reg.SetWithCustomAnnotations(*withCustomAnnotations)
 	reg.SetMergeFileName(*mergeFileName)
 	for k, v := range pkgMap {
 		reg.AddPkgMap(k, v)

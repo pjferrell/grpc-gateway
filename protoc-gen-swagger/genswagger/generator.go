@@ -122,8 +122,8 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGenerato
 		targetSwagger := mergeTargetFile(swaggers, g.reg.GetMergeFileName())
 		resFile := encodeSwagger(targetSwagger)
 		if g.reg.IsAtlasPatch() {
-			resFile.Content = proto.String(atlasSwagger([]byte(*resFile.Content), g.reg.IsWithPrivateOperations()))
-			if g.reg.IsWithPrivateOperations(){
+			resFile.Content = proto.String(atlasSwagger([]byte(*resFile.Content), g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations()))
+			if g.reg.IsWithPrivateOperations() {
 				privateFileName := strings.Replace(resFile.GetName(), ".swagger.json", ".private.swagger.json", -1)
 				resFile.Name = &privateFileName
 			}
@@ -135,8 +135,8 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGenerato
 			resFile := encodeSwagger(file)
 			fileContent := []byte(*resFile.Content)
 			if g.reg.IsAtlasPatch() {
-				resFile.Content = proto.String(atlasSwagger(fileContent, g.reg.IsWithPrivateOperations()))
-				if g.reg.IsWithPrivateOperations(){
+				resFile.Content = proto.String(atlasSwagger(fileContent, g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations()))
+				if g.reg.IsWithPrivateOperations() {
 					privateFileName := strings.Replace(resFile.GetName(), ".swagger.json", ".private.swagger.json", -1)
 					resFile.Name = &privateFileName
 				}
