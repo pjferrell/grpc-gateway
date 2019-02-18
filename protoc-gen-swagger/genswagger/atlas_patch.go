@@ -31,7 +31,7 @@ var (
 	seenRefs = map[string]bool{}
 )
 
-func atlasSwagger(b []byte, withPrivateMethods bool) string {
+func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) string {
 	if err := json.Unmarshal(b, &sw); err != nil {
 		fmt.Fprintf(os.Stderr, "error parsing JSON: %v\n", err)
 		os.Exit(1)
@@ -273,7 +273,9 @@ The service-defined string used to identify a page of resources. A null value in
 		sw.Definitions = filterDefinitions()
 	}
 
-	sw.Definitions = applyCustomAnnotations(sw.Definitions)
+	if withCustomAnnotations {
+		sw.Definitions = applyCustomAnnotations(sw.Definitions)
+	}
 
 	bOut, err := json.MarshalIndent(sw, "", "  ")
 	if err != nil {

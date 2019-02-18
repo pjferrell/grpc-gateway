@@ -52,6 +52,9 @@ type Registry struct {
 
 	// mergeFileName target swagger file name after merge
 	mergeFileName string
+
+	// withCustomAnnotations this flag provide you possibility to use custom annotations
+	withCustomAnnotations bool
 }
 
 // NewRegistry returns a new Registry.
@@ -326,6 +329,14 @@ func (r *Registry) IsAtlasPatch() bool {
 
 func (r *Registry) SetAtlasPatch(atlas bool) {
 	r.atlasPatch = atlas
+}
+
+func (r *Registry) SetWithCustomAnnotations(custom bool) {
+	r.withCustomAnnotations = custom
+}
+
+func (r *Registry) IsWithCustomAnnotations() bool {
+	return r.withCustomAnnotations
 }
 
 // IsWithPrivateOperations if true exclude all operations with tag "private"

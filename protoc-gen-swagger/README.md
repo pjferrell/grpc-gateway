@@ -49,7 +49,7 @@ Patch includes following changes:
    * Introduced new `with_private` flag if set generate service.private.swagger.json
    with all operation (including tagged as "private")
    
-   * Provide couple annotations for replacing values in swagger schema 
+   * Provide couple annotations for replacing values in swagger schema you need specify flag ```atlas_patch=true``` and ```with_custom_annotations=true```
      - ```@example``` annotation can be used for replacing default example with custom one
       support few value types includes float64, string, map[string]interface{}, []map[string]interface{} []float64, []string
        - ```@example 5.0```
