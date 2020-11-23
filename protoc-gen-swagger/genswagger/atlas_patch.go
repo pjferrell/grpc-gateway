@@ -204,44 +204,53 @@ The service-defined string used to identify a page of resources. A null value in
 
 			// Wrap responses
 			if op.Responses.StatusCodeResponses != nil {
-				rsp := op.Responses.StatusCodeResponses[200]
-
-				if !isNilRef(rsp.Schema.Ref) {
-					s, _, err := rsp.Schema.Ref.GetPointer().Get(sw)
-					if err != nil {
-						panic(err)
+				// check if StatusCodeResponses has 201 >= x < 300 then delete 200 and don't go to isNilRef check
+				exists := false
+				for code := range op.Responses.StatusCodeResponses {
+					if code >= 201 || code < 300 {
+						exists = true
 					}
-
-					schema := s.(spec.Schema)
-					if schema.Properties == nil {
-						schema.Properties = map[string]spec.Schema{}
-					}
-
-					def := sw.Definitions[trim(rsp.Schema.Ref)]
-					if rsp.Description == "" {
-						rsp.Description = on + " operation response"
-					}
-
-					switch on {
-					case "DELETE":
-						if len(def.Properties) == 0 {
-							rsp.Description = "No Content"
-							rsp.Schema = nil
-							op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
-							delete(sw.Definitions, trim(rsp.Ref))
-							delete(op.Responses.StatusCodeResponses, 200)
-							delete(op.Responses.StatusCodeResponses, 201)
-							break
+					break
+				}
+				if exists {
+					delete(op.Responses.StatusCodeResponses, 200)
+				} else {
+					rsp := op.Responses.StatusCodeResponses[200]
+					if !isNilRef(rsp.Schema.Ref) {
+						s, _, err := rsp.Schema.Ref.GetPointer().Get(sw)
+						if err != nil {
+							panic(err)
 						}
-						sw.Definitions[trim(rsp.Schema.Ref)] = schema
-						refs = append(refs, rsp.Schema.Ref)
-						op.Responses.StatusCodeResponses[200] = rsp
-					default:
-						sw.Definitions[trim(rsp.Schema.Ref)] = schema
-						refs = append(refs, rsp.Schema.Ref)
-						delete(op.Responses.StatusCodeResponses, 200)
-						delete(op.Responses.StatusCodeResponses, 201)
-						op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
+
+						schema := s.(spec.Schema)
+						if schema.Properties == nil {
+							schema.Properties = map[string]spec.Schema{}
+						}
+
+						def := sw.Definitions[trim(rsp.Schema.Ref)]
+						if rsp.Description == "" {
+							rsp.Description = on + " operation response"
+						}
+
+						switch on {
+						case "DELETE":
+							if len(def.Properties) == 0 {
+								rsp.Description = "No Content"
+								rsp.Schema = nil
+								op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
+								delete(sw.Definitions, trim(rsp.Ref))
+								delete(op.Responses.StatusCodeResponses, 200)
+								break
+							}
+							sw.Definitions[trim(rsp.Schema.Ref)] = schema
+							refs = append(refs, rsp.Schema.Ref)
+							op.Responses.StatusCodeResponses[200] = rsp
+						default:
+							sw.Definitions[trim(rsp.Schema.Ref)] = schema
+							refs = append(refs, rsp.Schema.Ref)
+							delete(op.Responses.StatusCodeResponses, 200)
+							op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
+						}
 					}
 				}
 			}
