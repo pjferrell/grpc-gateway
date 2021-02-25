@@ -207,7 +207,7 @@ The service-defined string used to identify a page of resources. A null value in
 				// check if StatusCodeResponses has 201 >= x < 300 then delete 200 and don't go to isNilRef check
 				exists := false
 				for code := range op.Responses.StatusCodeResponses {
-					if code >= 201 || code < 300 {
+					if code >= 201 && code < 300 {
 						exists = true
 					}
 					break
