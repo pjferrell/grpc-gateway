@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/grpc-ecosystem/grpc-gateway/utilities"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -21,7 +21,8 @@ type op struct {
 	operand int
 }
 
-// Pattern is a template pattern of http request paths defined in github.com/googleapis/googleapis/google/api/http.proto.
+// Pattern is a template pattern of http request paths defined in
+// https://github.com/googleapis/googleapis/blob/master/google/api/http.proto
 type Pattern struct {
 	// ops is a list of operations
 	ops []op
@@ -94,7 +95,7 @@ func NewPattern(version int, ops []int, pool []string, verb string) (Pattern, er
 			}
 			stack -= op.operand
 			if stack < 0 {
-				grpclog.Print("stack underflow")
+				grpclog.Info("stack underflow")
 				return Pattern{}, ErrInvalidPattern
 			}
 			stack++
@@ -153,7 +154,6 @@ func (p Pattern) Match(components []string, verb string) (map[string]string, err
 			components = append([]string{}, components...)
 			components[len(components)-1] += ":" + verb
 		}
-		verb = ""
 	}
 
 	var pos int

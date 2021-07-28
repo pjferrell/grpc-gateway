@@ -1,18 +1,18 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/textproto"
+	"strings"
 
-	"context"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime/internal"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // ForwardResponseStream forwards the stream from gRPC server to REST client.
@@ -33,7 +33,6 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 	handleForwardResponseServerMetadata(w, mux, md)
 
 	w.Header().Set("Transfer-Encoding", "chunked")
-	w.Header().Set("Content-Type", marshaler.ContentType())
 	if err := handleForwardResponseOptions(ctx, w, nil, opts); err != nil {
 		HTTPError(ctx, mux, marshaler, w, req, err)
 		return
@@ -53,18 +52,37 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 			return
 		}
 		if err != nil {
-			handleForwardResponseStreamError(wroteHeader, marshaler, w, err)
+			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err)
 			return
 		}
 		if err := handleForwardResponseOptions(ctx, w, resp, opts); err != nil {
-			handleForwardResponseStreamError(wroteHeader, marshaler, w, err)
+			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err)
 			return
 		}
 
-		buf, err := marshaler.Marshal(streamChunk(resp, nil))
+		if !wroteHeader {
+			w.Header().Set("Content-Type", marshaler.ContentType(resp))
+		}
+
+		var buf []byte
+		httpBody, isHTTPBody := resp.(*httpbody.HttpBody)
+		switch {
+		case resp == nil:
+			buf, err = marshaler.Marshal(errorChunk(status.New(codes.Internal, "empty response")))
+		case isHTTPBody:
+			buf = httpBody.GetData()
+		default:
+			result := map[string]interface{}{"result": resp}
+			if rb, ok := resp.(responseBody); ok {
+				result["result"] = rb.XXX_ResponseBody()
+			}
+
+			buf, err = marshaler.Marshal(result)
+		}
+
 		if err != nil {
 			grpclog.Infof("Failed to marshal response chunk: %v", err)
-			handleForwardResponseStreamError(wroteHeader, marshaler, w, err)
+			handleForwardResponseStreamError(ctx, wroteHeader, marshaler, w, req, mux, err)
 			return
 		}
 		if _, err = w.Write(buf); err != nil {
@@ -106,6 +124,12 @@ func handleForwardResponseTrailer(w http.ResponseWriter, md ServerMetadata) {
 	}
 }
 
+// responseBody interface contains method for getting field for marshaling to the response body
+// this method is generated for response struct from the value of `response_body` in the `google.api.HttpRule`
+type responseBody interface {
+	XXX_ResponseBody() interface{}
+}
+
 // ForwardResponseMessage forwards the message "resp" from gRPC server to REST client.
 func ForwardResponseMessage(ctx context.Context, mux *ServeMux, marshaler Marshaler, w http.ResponseWriter, req *http.Request, resp proto.Message, opts ...func(context.Context, http.ResponseWriter, proto.Message) error) {
 	md, ok := ServerMetadataFromContext(ctx)
@@ -114,14 +138,35 @@ func ForwardResponseMessage(ctx context.Context, mux *ServeMux, marshaler Marsha
 	}
 
 	handleForwardResponseServerMetadata(w, mux, md)
+
+	// RFC 7230 https://tools.ietf.org/html/rfc7230#section-4.1.2
+	// Unless the request includes a TE header field indicating "trailers"
+	// is acceptable, as described in Section 4.3, a server SHOULD NOT
+	// generate trailer fields that it believes are necessary for the user
+	// agent to receive.
+	doForwardTrailers := requestAcceptsTrailers(req)
+
+	if doForwardTrailers {
+		handleForwardResponseTrailerHeader(w, md)
+		w.Header().Set("Transfer-Encoding", "chunked")
+	}
+
 	handleForwardResponseTrailerHeader(w, md)
-	w.Header().Set("Content-Type", marshaler.ContentType())
+
+	contentType := marshaler.ContentType(resp)
+	w.Header().Set("Content-Type", contentType)
+
 	if err := handleForwardResponseOptions(ctx, w, resp, opts); err != nil {
 		HTTPError(ctx, mux, marshaler, w, req, err)
 		return
 	}
-
-	buf, err := marshaler.Marshal(resp)
+	var buf []byte
+	var err error
+	if rb, ok := resp.(responseBody); ok {
+		buf, err = marshaler.Marshal(rb.XXX_ResponseBody())
+	} else {
+		buf, err = marshaler.Marshal(resp)
+	}
 	if err != nil {
 		grpclog.Infof("Marshal error: %v", err)
 		HTTPError(ctx, mux, marshaler, w, req, err)
@@ -132,7 +177,14 @@ func ForwardResponseMessage(ctx context.Context, mux *ServeMux, marshaler Marsha
 		grpclog.Infof("Failed to write response: %v", err)
 	}
 
-	handleForwardResponseTrailer(w, md)
+	if doForwardTrailers {
+		handleForwardResponseTrailer(w, md)
+	}
+}
+
+func requestAcceptsTrailers(req *http.Request) bool {
+	te := req.Header.Get("TE")
+	return strings.Contains(strings.ToLower(te), "trailers")
 }
 
 func handleForwardResponseOptions(ctx context.Context, w http.ResponseWriter, resp proto.Message, opts []func(context.Context, http.ResponseWriter, proto.Message) error) error {
@@ -148,18 +200,15 @@ func handleForwardResponseOptions(ctx context.Context, w http.ResponseWriter, re
 	return nil
 }
 
-func handleForwardResponseStreamError(wroteHeader bool, marshaler Marshaler, w http.ResponseWriter, err error) {
-	buf, merr := marshaler.Marshal(streamChunk(nil, err))
+func handleForwardResponseStreamError(ctx context.Context, wroteHeader bool, marshaler Marshaler, w http.ResponseWriter, req *http.Request, mux *ServeMux, err error) {
+	st := mux.streamErrorHandler(ctx, err)
+	if !wroteHeader {
+		w.WriteHeader(HTTPStatusFromCode(st.Code()))
+	}
+	buf, merr := marshaler.Marshal(errorChunk(st))
 	if merr != nil {
 		grpclog.Infof("Failed to marshal an error: %v", merr)
 		return
-	}
-	if !wroteHeader {
-		s, ok := status.FromError(err)
-		if !ok {
-			s = status.New(codes.Unknown, err.Error())
-		}
-		w.WriteHeader(HTTPStatusFromCode(s.Code()))
 	}
 	if _, werr := w.Write(buf); werr != nil {
 		grpclog.Infof("Failed to notify error to client: %v", werr)
@@ -167,29 +216,6 @@ func handleForwardResponseStreamError(wroteHeader bool, marshaler Marshaler, w h
 	}
 }
 
-func streamChunk(result proto.Message, err error) map[string]proto.Message {
-	if err != nil {
-		grpcCode := codes.Unknown
-		grpcMessage := err.Error()
-		var grpcDetails []*any.Any
-		if s, ok := status.FromError(err); ok {
-			grpcCode = s.Code()
-			grpcMessage = s.Message()
-			grpcDetails = s.Proto().GetDetails()
-		}
-		httpCode := HTTPStatusFromCode(grpcCode)
-		return map[string]proto.Message{
-			"error": &internal.StreamError{
-				GrpcCode:   int32(grpcCode),
-				HttpCode:   int32(httpCode),
-				Message:    grpcMessage,
-				HttpStatus: http.StatusText(httpCode),
-				Details:    grpcDetails,
-			},
-		}
-	}
-	if result == nil {
-		return streamChunk(nil, fmt.Errorf("empty response"))
-	}
-	return map[string]proto.Message{"result": result}
+func errorChunk(st *status.Status) map[string]proto.Message {
+	return map[string]proto.Message{"error": st.Proto()}
 }
