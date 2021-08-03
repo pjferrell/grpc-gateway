@@ -115,6 +115,8 @@ type Registry struct {
 
 	// recursiveDepth sets the maximum depth of a field parameter
 	recursiveDepth int
+
+	atlasPatch bool
 }
 
 type repeatedFieldSeparator struct {
@@ -351,6 +353,16 @@ func (r *Registry) UnboundExternalHTTPRules() []string {
 // AddPkgMap adds a mapping from a .proto file to proto package name.
 func (r *Registry) AddPkgMap(file, protoPkg string) {
 	r.pkgMap[file] = protoPkg
+}
+
+// IsAtlasPatch whether generation is followed by atlas-patch changes.
+func (r *Registry) IsAtlasPatch() bool {
+	return r.atlasPatch
+}
+
+// SetAtlasPatch if true, use atlas customizations to openapiv2
+func (r *Registry) SetAtlasPatch(patch bool) {
+	r.atlasPatch = patch
 }
 
 // SetPrefix registers the prefix to be added to go package paths generated from proto package names.

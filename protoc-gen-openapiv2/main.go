@@ -35,6 +35,9 @@ var (
 	openAPIConfiguration       = flag.String("openapi_configuration", "", "path to file which describes the OpenAPI Configuration in YAML format")
 	generateUnboundMethods     = flag.Bool("generate_unbound_methods", false, "generate swagger metadata even for RPC methods that have no HttpRule annotation")
 	recursiveDepth             = flag.Int("recursive-depth", 1000, "maximum recursion count allowed for a field type")
+
+	// Atlas specific flags
+	atlasPatch            = flag.Bool("atlas_patch", false, "if set, generation will be proceded with atlas-patch changes")
 )
 
 // Variables set by goreleaser at build time
@@ -77,6 +80,8 @@ func main() {
 			glog.Fatalf("Error parsing flags: %v", err)
 		}
 	}
+
+	reg.SetAtlasPatch(*atlasPatch)
 
 	reg.SetPrefix(*importPrefix)
 	reg.SetAllowDeleteBody(*allowDeleteBody)
