@@ -706,6 +706,21 @@ func TestRegisterOpenAPIOptions(t *testing.T) {
 	}
 }
 
+func TestIsAtlasPatch(t *testing.T) {
+	reg := NewRegistry()
+	reg.SetAtlasPatch(true)
+
+	if !reg.IsAtlasPatch() {
+		t.Fatal("expected IsAtlasPatch to be true")
+	}
+
+	reg.SetAtlasPatch(false)
+
+	if reg.IsAtlasPatch() {
+		t.Fatal("expected IsAtlasPatch to be true")
+	}
+}
+
 func assertStringSlice(t *testing.T, message string, got, want []string) {
 	if len(got) != len(want) {
 		t.Errorf("%s = %#v len(%d); want %#v len(%d)", message, got, len(got), want, len(want))
