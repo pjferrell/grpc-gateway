@@ -38,6 +38,8 @@ var (
 
 	// Atlas specific flags
 	atlasPatch            = flag.Bool("atlas_patch", false, "if set, generation will be proceded with atlas-patch changes")
+	withPrivate           = flag.Bool("with_private", false, "if unset, generate swagger schema without operations 0 as 'private' work only if atlas_patch set")
+	withCustomAnnotations = flag.Bool("with_custom_annotations", false, "if set, you became available to use custom annotations")
 )
 
 // Variables set by goreleaser at build time
@@ -82,6 +84,8 @@ func main() {
 	}
 
 	reg.SetAtlasPatch(*atlasPatch)
+	reg.SetPrivateOperations(*withPrivate)
+	reg.SetCustomAnnotations(*withCustomAnnotations)
 
 	reg.SetPrefix(*importPrefix)
 	reg.SetAllowDeleteBody(*allowDeleteBody)

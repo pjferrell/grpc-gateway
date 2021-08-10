@@ -125,6 +125,15 @@ proto:
 
 generate: proto $(ECHO_EXAMPLE_SRCS) $(ABE_EXAMPLE_SRCS) $(UNANNOTATED_ECHO_EXAMPLE_SRCS) $(RESPONSE_BODY_EXAMPLE_SRCS) $(GENERATE_UNBOUND_METHODS_EXAMPLE_SRCS)
 
+generate-atlas: install proto
+	$(SWAGGER_CODEGEN) generate -i $(ABE_EXAMPLE_SPEC) \
+    		-l go -o examples/internal/clients/atlas/abe --additional-properties packageName=abe,atlas_patch
+	@rm -f $(EXAMPLE_CLIENT_DIR)/abe/README.md \
+		$(EXAMPLE_CLIENT_DIR)/abe/git_push.sh
+	cp examples/internal/proto/examplepb/a_bit_of_everything.swagger.json swaggy.hevvy.modified.json
+	jq --sort-keys . swaggy.hevvy.modified.json | sponge swaggy.hevvy.modified.json
+	git diff --no-index swaggy.og.json swaggy.hevvy.modified.json --exit-code
+
 test: proto
 	go test -short -race ./...
 	go test -race ./examples/internal/integration -args -network=unix -endpoint=test.sock

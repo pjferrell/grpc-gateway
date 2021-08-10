@@ -2501,13 +2501,6 @@
         },
         "parameters": [
           {
-            "name": "book.name",
-            "description": "The resource name of the book.\n\nFormat: `publishers/{publisher}/books/{book}`\n\nExample: `publishers/1257894000000000000/books/my-book`",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
             "name": "body",
             "description": "The book to update.\n\nThe book's `name` field is used to identify the book to be updated.\nFormat: publishers/{publisher}/books/{book}",
             "in": "body",
@@ -2578,13 +2571,6 @@
           }
         },
         "parameters": [
-          {
-            "name": "parent",
-            "description": "The publisher in which to create the book.\n\nFormat: `publishers/{publisher}`\n\nExample: `publishers/1257894000000000000`",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "body",
             "description": "The book to create.",

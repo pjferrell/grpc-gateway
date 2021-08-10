@@ -119,7 +119,14 @@ type Registry struct {
 	// annotationMap is used to check for duplicate HTTP annotations
 	annotationMap map[annotationIdentifier]struct{}
 
+	// atlasPatch if true, use atlas openapi customizations
 	atlasPatch bool
+
+	// privateOperations if true, respect private annotations and generate separate openapi files for private ops
+	privateOperations bool
+
+	// customAnnotations if true, allow custom annotations in the openapi spec
+	customAnnotations bool
 }
 
 type repeatedFieldSeparator struct {
@@ -372,6 +379,26 @@ func (r *Registry) IsAtlasPatch() bool {
 // SetAtlasPatch if true, use atlas customizations to openapiv2
 func (r *Registry) SetAtlasPatch(patch bool) {
 	r.atlasPatch = patch
+}
+
+// IsWithPrivateOperations whether private operations are enabled
+func (r *Registry) IsWithPrivateOperations() bool {
+	return r.privateOperations
+}
+
+// SetPrivateOperations if true, respect private operation annotation
+func (r *Registry) SetPrivateOperations(private bool) {
+	r.privateOperations = private
+}
+
+// IsWithCustomAnnotations whether custom annotations are used
+func (r *Registry) IsWithCustomAnnotations() bool {
+	return r.customAnnotations
+}
+
+// SetCustomAnnotations if true, use atlas custom annotations
+func (r *Registry) SetCustomAnnotations(custom bool) {
+	r.atlasPatch = custom
 }
 
 // SetPrefix registers the prefix to be added to go package paths generated from proto package names.
