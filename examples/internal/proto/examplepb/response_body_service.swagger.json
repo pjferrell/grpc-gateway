@@ -93,7 +93,7 @@
         "operationId": "ResponseBodyService_GetResponseBody",
         "responses": {
           "200": {
-            "description": "",
+            "description": "GET operation response",
             "schema": {
               "$ref": "#/definitions/examplepbResponseBodyOutResponse"
             }

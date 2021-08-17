@@ -21,7 +21,7 @@
         "summary": "Apply field mask to empty NonStandardMessage and return result.",
         "operationId": "NonStandardService_Update",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbNonStandardMessage"
@@ -60,7 +60,7 @@
         "summary": "Apply field mask to empty NonStandardMessageWithJSONNames and return result.",
         "operationId": "NonStandardService_UpdateWithJSONNames",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbNonStandardMessageWithJSONNames"

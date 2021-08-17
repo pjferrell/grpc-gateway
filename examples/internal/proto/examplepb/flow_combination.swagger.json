@@ -20,7 +20,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc6",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -117,7 +117,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc4",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -214,7 +214,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc5",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -311,7 +311,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -384,7 +384,7 @@
       "post": {
         "operationId": "FlowCombination_RpcEmptyRpc",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -437,7 +437,7 @@
       "post": {
         "operationId": "FlowCombination_RpcPathSingleNestedRpc",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -506,7 +506,7 @@
       "post": {
         "operationId": "FlowCombination_RpcPathNestedRpc",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -603,7 +603,7 @@
       "post": {
         "operationId": "FlowCombination_RpcPathNestedRpc2",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -672,7 +672,7 @@
       "post": {
         "operationId": "FlowCombination_RpcPathNestedRpc3",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -769,7 +769,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc7",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -838,7 +838,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc2",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -931,7 +931,7 @@
       "post": {
         "operationId": "FlowCombination_RpcBodyRpc3",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"
@@ -984,7 +984,7 @@
       "post": {
         "operationId": "FlowCombination_StreamEmptyRpc",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbEmptyProto"

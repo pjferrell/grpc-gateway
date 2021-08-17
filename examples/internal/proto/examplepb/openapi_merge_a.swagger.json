@@ -26,7 +26,7 @@
         "description": "Here is the detail explanation about ServiceA.MethodOne.",
         "operationId": "ServiceA_MethodOne",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbOutMessageA"
@@ -60,7 +60,7 @@
         "description": "Here is the detail explanation about ServiceA.MethodTwo.",
         "operationId": "ServiceA_MethodTwo",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbInMessageA"
@@ -94,7 +94,7 @@
         "description": "Here is the detail explanation about ServiceC.MethodOne.",
         "operationId": "ServiceC_MethodOne",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbOutMessageC"
@@ -128,7 +128,7 @@
         "description": "Here is the detail explanation about ServiceC.MethodTwo.",
         "operationId": "ServiceC_MethodTwo",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbInMessageA"

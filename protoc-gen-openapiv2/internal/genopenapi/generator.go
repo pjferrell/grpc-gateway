@@ -209,7 +209,6 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*descriptor.Response
 		targetOpenAPI := mergeTargetFile(openapis, g.reg.GetMergeFileName())
 
 		if g.reg.IsAtlasPatch() {
-			glog.Errorf("ATLAS PATCHIN")
 			targetOpenAPI.swagger = atlasSwagger(targetOpenAPI.swagger, g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations())
 			if g.reg.IsWithPrivateOperations() {
 				targetOpenAPI.fileName = strings.Replace(targetOpenAPI.fileName, ".swagger.json", ".private.swagger.json", -1)
@@ -225,7 +224,6 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*descriptor.Response
 	} else {
 		for _, file := range openapis {
 			if g.reg.IsAtlasPatch() {
-				glog.Errorf("ATLAS PATCHIN")
 				file.swagger = atlasSwagger(file.swagger, g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations())
 				if g.reg.IsWithPrivateOperations() {
 					file.fileName = strings.Replace(file.fileName, ".swagger.json", ".private.swagger.json", -1)

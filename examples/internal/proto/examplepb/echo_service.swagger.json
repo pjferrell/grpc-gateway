@@ -23,7 +23,7 @@
         "description": "The message posted as the id parameter will also be\nreturned.",
         "operationId": "EchoService_Echo",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbSimpleMessage"
@@ -387,7 +387,7 @@
         "summary": "EchoBody method receives a simple message and returns it.",
         "operationId": "EchoService_EchoBody",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbSimpleMessage"
@@ -505,7 +505,7 @@
         "summary": "EchoPatch method receives a NonStandardUpdateRequest and returns it.",
         "operationId": "EchoService_EchoPatch",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbDynamicMessageUpdate"

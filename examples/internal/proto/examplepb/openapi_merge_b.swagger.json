@@ -23,7 +23,7 @@
         "description": "Here is the detail explanation about ServiceB.MethodOne.",
         "operationId": "ServiceB_MethodOne",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbOutMessageB"
@@ -57,7 +57,7 @@
         "description": "Here is the detail explanation about ServiceB.MethodTwo.",
         "operationId": "ServiceB_MethodTwo",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbInMessageB"

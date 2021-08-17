@@ -20,7 +20,7 @@
       "post": {
         "operationId": "WrappersService_Create",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbWrappers"

@@ -48,7 +48,7 @@
       "post": {
         "operationId": "ABitOfEverythingService_CreateBody",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbABitOfEverything"
@@ -858,7 +858,7 @@
       "post": {
         "operationId": "ABitOfEverythingService_CheckPostQueryParams",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbABitOfEverything"
@@ -1554,7 +1554,7 @@
         "description": "This API creates a new ABitOfEverything",
         "operationId": "ABitOfEverythingService_Create",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbABitOfEverything"
@@ -2401,7 +2401,7 @@
       "post": {
         "operationId": "ABitOfEverythingService_DeepPathEcho",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbABitOfEverything"
@@ -2463,7 +2463,7 @@
       "patch": {
         "operationId": "ABitOfEverythingService_UpdateBook",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbBook"
@@ -2534,7 +2534,7 @@
         "summary": "Create a book.",
         "operationId": "ABitOfEverythingService_CreateBook",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/examplepbBook"
@@ -2800,7 +2800,7 @@
         "description": "Description Echo",
         "operationId": "ABitOfEverythingService_Echo2",
         "responses": {
-          "200": {
+          "201": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/subStringMessage"
