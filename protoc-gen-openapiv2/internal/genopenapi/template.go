@@ -926,6 +926,15 @@ func templateToOpenAPIPath(path string, reg *descriptor.Registry, fields []*desc
 	// syntax for this subsection CAN be handled by a regexp since it has no
 	// memory.
 	for index, part := range parts {
+		if strings.Contains(part, "=") && !strings.Contains(part, "*") {
+			v := strings.Split(strings.TrimSuffix(strings.TrimPrefix(part, "{"), "}"), "=")
+			if len(v) == 2 {
+				part = v[1]
+				parts[index] = part
+				continue
+			}
+		}
+
 		// If part is a resource name such as "parent", "name", "user.name", the format info must be retained.
 		prefix := canRegexp.ReplaceAllString(part, "$1")
 		if isResourceName(prefix) {
