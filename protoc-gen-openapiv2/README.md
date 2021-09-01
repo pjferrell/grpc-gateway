@@ -89,5 +89,4 @@ Patch includes following changes:
 ## TODOs 
 
 - enable Travis CI (commit [94a2d0d8129c681ac6c587f853aecd2d0d24276d](https://github.com/infobloxopen/grpc-gateway/commit/94a2d0d8129c681ac6c587f853aecd2d0d24276d))
-    
-
+- enhance error message (commit [7951e5b80744558ae3363fd792806e1db15e91a4](https://github.com/infobloxopen/grpc-gateway/commit/7951e5b80744558ae3363fd792806e1db15e91a4))    
