@@ -243,7 +243,7 @@ type openapiSchemaObject struct {
 	schemaCore
 	// Properties can be recursively defined
 	Properties           *openapiSchemaObjectProperties `json:"properties,omitempty"`
-	AdditionalProperties *openapiSchemaObject           `json:"additionalProperties,omitempty"`
+	AdditionalProperties *openapiSchemaObject           `json:"additionalProperties"`
 
 	Description string `json:"description,omitempty"`
 	Title       string `json:"title,omitempty"`

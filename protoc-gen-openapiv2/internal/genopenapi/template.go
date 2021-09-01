@@ -621,15 +621,26 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) o
 			}
 			return openapiSchemaObject{schemaCore: core, Description: s.GetJsonSchema().GetDescription()}
 		} else {
+			if refs != nil {
+				refs[fd.GetTypeName()] = struct{}{}
+			}
+
+			// Substitute all refs with default representation of the gorm.types.JSONValue on map[string]interface{}
 			swgRef, ok := fullyQualifiedNameToOpenAPIName(fd.GetTypeName(), reg)
 			if !ok {
 				panic(fmt.Sprintf("can't resolve OpenAPI ref from typename '%v'", fd.GetTypeName()))
 			}
-			core = schemaCore{
-				Ref: "#/definitions/" + swgRef,
-			}
-			if refs != nil {
-				refs[fd.GetTypeName()] = struct{}{}
+			if strings.Index(swgRef, "JSONValue") == -1 {
+				core = schemaCore{
+					Ref: "#/definitions/" + swgRef,
+				}
+			} else {
+				return openapiSchemaObject{
+					schemaCore: schemaCore{
+						Type: "object",
+					},
+					AdditionalProperties: &openapiSchemaObject{},
+				}
 			}
 		}
 	default:
