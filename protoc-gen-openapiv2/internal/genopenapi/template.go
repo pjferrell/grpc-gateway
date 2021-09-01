@@ -205,6 +205,26 @@ func nestedQueryParams(message *descriptor.Message, field *descriptor.Field, pre
 			}
 		}
 	}
+
+	if msg, err := reg.LookupMsg("", field.GetTypeName()); err == nil && mimicsPrimitiveType(msg) {
+		s, err := extractSchemaOptionFromMessageDescriptor(msg.DescriptorProto)
+		if err != nil {
+			return nil, err
+		}
+
+		t, f := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+
+		param := openapiParameterObject{
+			Name:        field.GetName(),
+			In:          "query",
+			Type:        t,
+			Format:      f,
+			Description: s.GetJsonSchema().GetDescription(),
+		}
+
+		return []openapiParameterObject{param}, nil
+	}
+
 	schema := schemaOfField(field, reg, nil)
 	fieldType := field.GetTypeName()
 	if message.File != nil {
@@ -363,6 +383,9 @@ func findNestedMessagesAndEnumerations(message *descriptor.Message, reg *descrip
 					e[fieldType] = enum
 					continue
 				}
+				if mimicsPrimitiveType(msg) {
+					continue
+				}
 				m[fieldType] = msg
 				findNestedMessagesAndEnumerations(msg, reg, m, e)
 			}
@@ -432,9 +455,11 @@ func renderMessageAsDefinition(msg *descriptor.Message, reg *descriptor.Registry
 			continue
 		}
 		fieldValue := schemaOfField(f, reg, customRefs)
-		comments := fieldProtoComments(reg, msg, f)
-		if err := updateOpenAPIDataFromComments(reg, &fieldValue, f, comments, false); err != nil {
-			panic(err)
+		if fieldValue.Description == "" {
+			comments := fieldProtoComments(reg, msg, f)
+			if err := updateOpenAPIDataFromComments(reg, &fieldValue, f, comments, false); err != nil {
+				panic(err)
+			}
 		}
 
 		if requiredIdx := find(schema.Required, *f.Name); requiredIdx != -1 && reg.GetUseJSONNamesForFields() {
@@ -487,6 +512,26 @@ func transformAnyForJSON(schema *openapiSchemaObject, useJSONNames bool) {
 			break
 		}
 	}
+}
+
+func mimicsPrimitiveType(message *descriptor.Message) bool {
+	s, err := extractSchemaOptionFromMessageDescriptor(message.DescriptorProto)
+	if err != nil {
+		return false
+	}
+
+	if _, ok := wktSchemas[s.GetJsonSchema().GetRef()]; ok {
+		return true
+	}
+
+	t, _ := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+
+	// FIXME: should array be treated as a primitive type?
+	if t == "" || t == "object" || t == "unknown" || t == "array" {
+		return false
+	}
+
+	return true
 }
 
 func renderMessagesAsDefinition(messages messageMap, d openapiDefinitionsObject, reg *descriptor.Registry, customRefs refMap, excludeFields []*descriptor.Field) {
@@ -557,6 +602,24 @@ func schemaOfField(f *descriptor.Field, reg *descriptor.Registry, refs refMap) o
 			if fd.GetTypeName() == ".google.protobuf.Empty" {
 				props = &openapiSchemaObjectProperties{}
 			}
+		} else if msg, err := reg.LookupMsg("", fd.GetTypeName()); err == nil && mimicsPrimitiveType(msg) {
+			s, _ := extractSchemaOptionFromMessageDescriptor(msg.DescriptorProto)
+			t, f := protoJSONSchemaTypeToFormat(s.GetJsonSchema().GetType())
+			if aggregate == array {
+				core = schemaCore{
+					Type:   "array",
+					Format: f,
+					Items: &openapiItemsObject{
+						Type: t,
+					},
+				}
+			} else {
+				core = schemaCore{
+					Type:   t,
+					Format: f,
+				}
+			}
+			return openapiSchemaObject{schemaCore: core, Description: s.GetJsonSchema().GetDescription()}
 		} else {
 			swgRef, ok := fullyQualifiedNameToOpenAPIName(fd.GetTypeName(), reg)
 			if !ok {
@@ -2397,7 +2460,7 @@ func addCustomRefs(d openapiDefinitionsObject, reg *descriptor.Registry, refs re
 			continue
 		}
 		msg, err := reg.LookupMsg("", ref)
-		if err == nil {
+		if err == nil || !mimicsPrimitiveType(msg) {
 			msgMap[swgName] = msg
 			continue
 		}

@@ -73,6 +73,66 @@
           }
         }
       }
+    },
+    "/mimic": {
+      "get": {
+        "description": "For more info see https://github.com/infobloxopen/grpc-gateway/commit/b1b91ec20bc061ecbb8cafa21ea9fd96f4e06337",
+        "tags": [
+          "ContactService"
+        ],
+        "summary": "Test getting objects with mimicked primitive types.",
+        "operationId": "ContactServiceContactService_GetMimic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/testdataMimicObjectResponse"
+            }
+          }
+        }
+      }
+    },
+    "/mimic/{requestValueOne}": {
+      "post": {
+        "description": "For more info see https://github.com/infobloxopen/grpc-gateway/commit/b1b91ec20bc061ecbb8cafa21ea9fd96f4e06337",
+        "tags": [
+          "ContactService"
+        ],
+        "summary": "Test posting objects with mimicked primitive types.",
+        "operationId": "ContactServiceContactService_PostMimic",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "requestValueOne",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "description": "this message mimics string type, however when put in request rendered as a definition",
+              "type": "string",
+              "format": "string",
+              "properties": {
+                "requestEnum": {
+                  "$ref": "#/definitions/MimicObjectRequestMimicRequestEnum"
+                },
+                "requestValueTwo": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {}
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -94,6 +154,14 @@
         "MOBILE",
         "HOME",
         "WORK"
+      ]
+    },
+    "MimicObjectResponseMimicResponseEnum": {
+      "type": "string",
+      "default": "VALUE_ONE",
+      "enum": [
+        "VALUE_ONE",
+        "VALUE_TWO"
       ]
     },
     "testdataContact": {
@@ -128,6 +196,22 @@
       "properties": {
         "result": {
           "$ref": "#/definitions/testdataContact"
+        }
+      }
+    },
+    "testdataMimicObjectResponse": {
+      "description": "this message mimics string type, however when put in response rendered as a definition",
+      "type": "string",
+      "format": "string",
+      "properties": {
+        "responseEnum": {
+          "$ref": "#/definitions/MimicObjectResponseMimicResponseEnum"
+        },
+        "responseValueOne": {
+          "type": "string"
+        },
+        "responseValueTwo": {
+          "type": "string"
         }
       }
     }
