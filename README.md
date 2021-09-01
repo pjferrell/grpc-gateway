@@ -549,3 +549,8 @@ See [LICENSE.txt](https://github.com/grpc-ecosystem/grpc-gateway/blob/master/LIC
 ## TODOs
 
 - support paths option (commit [42fa2028fd3ba4a546dd525d9db71573f1992ba1](https://github.com/infobloxopen/grpc-gateway/commit/42fa2028fd3ba4a546dd525d9db71573f1992ba1))
+- fix path component with trailing colon (commit [7226a0d0cd5d6a64d73ed5eba1ce19cad859d70f](https://github.com/infobloxopen/grpc-gateway/commit/7226a0d0cd5d6a64d73ed5eba1ce19cad859d70f))
+- document OpenTracing Support (commit [67eefea3f6319f6d4ae0524d40126fb43f0d81f8](https://github.com/infobloxopen/grpc-gateway/commit/67eefea3f6319f6d4ae0524d40126fb43f0d81f8))
+
+
+

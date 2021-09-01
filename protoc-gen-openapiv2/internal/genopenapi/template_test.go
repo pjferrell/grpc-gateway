@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	protodescriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/google/go-cmp/cmp"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/internal/descriptor"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/internal/descriptor/openapiconfig"
@@ -60,9 +61,10 @@ func reqFromFile(f *descriptor.File) *pluginpb.CodeGeneratorRequest {
 
 func TestMessageToQueryParametersWithEnumAsInt(t *testing.T) {
 	type test struct {
-		MsgDescs []*descriptorpb.DescriptorProto
-		Message  string
-		Params   []openapiParameterObject
+		MsgDescs   []*descriptorpb.DescriptorProto
+		Message    string
+		Extensions map[string]interface{}
+		Params     []openapiParameterObject
 	}
 
 	tests := []test{
@@ -193,6 +195,56 @@ func TestMessageToQueryParametersWithEnumAsInt(t *testing.T) {
 				},
 			},
 		},
+		{
+			MsgDescs: []*protodescriptor.DescriptorProto{
+				{
+					Name: proto.String("ExampleObject"),
+					Field: []*protodescriptor.FieldDescriptorProto{
+						{
+							Name:     proto.String("mimic_string"),
+							Type:     protodescriptor.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+							TypeName: proto.String(".example.MimicObject"),
+							Number:   proto.Int32(1),
+						},
+					},
+				},
+				{
+					Name: proto.String("MimicObject"),
+					Field: []*protodescriptor.FieldDescriptorProto{
+						{
+							Name:   proto.String("a"),
+							Type:   protodescriptor.FieldDescriptorProto_TYPE_STRING.Enum(),
+							Number: proto.Int32(1),
+						},
+						{
+							Name:   proto.String("b"),
+							Type:   protodescriptor.FieldDescriptorProto_TYPE_STRING.Enum(),
+							Number: proto.Int32(2),
+						},
+					},
+				},
+			},
+			Extensions: map[string]interface{}{
+				"MimicObject": &openapi_options.Schema{
+					JsonSchema: &openapi_options.JSONSchema{
+						Type: []openapi_options.JSONSchema_JSONSchemaSimpleTypes{
+							openapi_options.JSONSchema_STRING,
+						},
+						Description: "Description for MimicObject",
+					},
+				},
+			},
+			Message: "ExampleObject",
+			Params: []openapiParameterObject{
+				{
+					Name:        "mimic_string",
+					In:          "query",
+					Required:    false,
+					Type:        "string",
+					Description: "Description for MimicObject",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -200,6 +252,10 @@ func TestMessageToQueryParametersWithEnumAsInt(t *testing.T) {
 		reg.SetEnumsAsInts(true)
 		msgs := []*descriptor.Message{}
 		for _, msgdesc := range test.MsgDescs {
+			if ext, ok := test.Extensions[msgdesc.GetName()]; ok {
+				msgdesc.Options = new(protodescriptor.MessageOptions)
+				proto.SetExtension(msgdesc.Options, openapi_options.E_Openapiv2Schema, ext)
+			}
 			msgs = append(msgs, &descriptor.Message{DescriptorProto: msgdesc})
 		}
 		file := descriptor.File{
@@ -3618,8 +3674,8 @@ func TestSchemaOfField(t *testing.T) {
 					Type:  "array",
 					Items: (*openapiItemsObject)(&schemaCore{Type: "string"}),
 				},
-				Title:       "field title",
-				Description: "field description",
+				Title:       "",
+				Description: "",
 			},
 		},
 		{
