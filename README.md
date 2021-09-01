@@ -543,3 +543,9 @@ See [CONTRIBUTING.md](http://github.com/grpc-ecosystem/grpc-gateway/blob/master/
 
 gRPC-Gateway is licensed under the BSD 3-Clause License.
 See [LICENSE.txt](https://github.com/grpc-ecosystem/grpc-gateway/blob/master/LICENSE.txt) for more details.
+
+# gRPC-Gateway v2 migration
+
+## TODOs
+
+- support paths option (commit [42fa2028fd3ba4a546dd525d9db71573f1992ba1](https://github.com/infobloxopen/grpc-gateway/commit/42fa2028fd3ba4a546dd525d9db71573f1992ba1))
