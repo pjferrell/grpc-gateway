@@ -83,3 +83,11 @@ Patch includes following changes:
 
   In first case all what presented after line ```@example <<<EOF``` will be rendered as example,
   if you want to manually set boundaries please use ```EOF``` as a closing line
+
+# gRPC-Gateway v2 migration 
+
+## TODOs 
+
+- enable Travis CI (commit [94a2d0d8129c681ac6c587f853aecd2d0d24276d](https://github.com/infobloxopen/grpc-gateway/commit/94a2d0d8129c681ac6c587f853aecd2d0d24276d))
+    
+
