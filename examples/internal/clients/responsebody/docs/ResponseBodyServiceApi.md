@@ -1,16 +1,17 @@
-# {{classname}}
+# \ResponseBodyServiceApi
 
-All URIs are relative to */*
+All URIs are relative to *https://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**ResponseBodyServiceResponseBodyServiceGetResponseBody**](ResponseBodyServiceApi.md#ResponseBodyServiceResponseBodyServiceGetResponseBody) | **Get** /responsebody/{data} | 
-[**ResponseBodyServiceResponseBodyServiceGetResponseBodyStream**](ResponseBodyServiceApi.md#ResponseBodyServiceResponseBodyServiceGetResponseBodyStream) | **Get** /responsebody/stream/{data} | 
-[**ResponseBodyServiceResponseBodyServiceListResponseBodies**](ResponseBodyServiceApi.md#ResponseBodyServiceResponseBodyServiceListResponseBodies) | **Get** /responsebodies/{data} | 
-[**ResponseBodyServiceResponseBodyServiceListResponseStrings**](ResponseBodyServiceApi.md#ResponseBodyServiceResponseBodyServiceListResponseStrings) | **Get** /responsestrings/{data} | 
+[**ResponseBodyServiceGetResponseBody**](ResponseBodyServiceApi.md#ResponseBodyServiceGetResponseBody) | **Get** /responsebody/{data} | 
+[**ResponseBodyServiceGetResponseBodyStream**](ResponseBodyServiceApi.md#ResponseBodyServiceGetResponseBodyStream) | **Get** /responsebody/stream/{data} | 
+[**ResponseBodyServiceListResponseBodies**](ResponseBodyServiceApi.md#ResponseBodyServiceListResponseBodies) | **Get** /responsebodies/{data} | 
+[**ResponseBodyServiceListResponseStrings**](ResponseBodyServiceApi.md#ResponseBodyServiceListResponseStrings) | **Get** /responsestrings/{data} | 
 
-# **ResponseBodyServiceResponseBodyServiceGetResponseBody**
-> ExamplepbResponseBodyOutResponse ResponseBodyServiceResponseBodyServiceGetResponseBody(ctx, data)
+
+# **ResponseBodyServiceGetResponseBody**
+> ExamplepbResponseBodyOutResponse ResponseBodyServiceGetResponseBody(ctx, data)
 
 
 ### Required Parameters
@@ -30,13 +31,13 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ResponseBodyServiceResponseBodyServiceGetResponseBodyStream**
-> StreamResultOfExamplepbResponseBodyOut ResponseBodyServiceResponseBodyServiceGetResponseBodyStream(ctx, data)
+# **ResponseBodyServiceGetResponseBodyStream**
+> StreamResultOfExamplepbResponseBodyOut ResponseBodyServiceGetResponseBodyStream(ctx, data)
 
 
 ### Required Parameters
@@ -56,13 +57,13 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ResponseBodyServiceResponseBodyServiceListResponseBodies**
-> []ExamplepbRepeatedResponseBodyOutResponse ResponseBodyServiceResponseBodyServiceListResponseBodies(ctx, data)
+# **ResponseBodyServiceListResponseBodies**
+> []ExamplepbRepeatedResponseBodyOutResponse ResponseBodyServiceListResponseBodies(ctx, data)
 
 
 ### Required Parameters
@@ -82,13 +83,13 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ResponseBodyServiceResponseBodyServiceListResponseStrings**
-> []string ResponseBodyServiceResponseBodyServiceListResponseStrings(ctx, data)
+# **ResponseBodyServiceListResponseStrings**
+> []string ResponseBodyServiceListResponseStrings(ctx, data)
 
 
 ### Required Parameters
@@ -108,7 +109,7 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -1,0 +1,78 @@
+syntax = "proto3";
+package testdata;
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/infobloxopen/atlas-gentool/testdata;test";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "OpenAPI V2 Atlas Patch Test";
+    version: "2.0";
+    contact: {
+      name: "John Doe";
+      url: "https://github.com/infobloxprivate/atlas-contacts-app";
+      email: "jdoe@infoblox.com";
+    };
+  };
+  schemes: HTTP;
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+};
+
+message Contact {
+  // Unique ID number for this contact.
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+  }
+
+  repeated PhoneNumber phones = 4;
+  google.protobuf.Timestamp last_updated = 5;
+}
+
+message GetContactRequest {
+  // Unique ID number for this contact.
+  int32 id = 1;
+}
+
+message CreateContactRequest {
+  Contact payload = 1;
+}
+
+message CreateContactResponse {
+  Contact result = 1;
+}
+
+service ContactService {
+  rpc Get (GetContactRequest) returns (Contact) {
+    option (google.api.http) = {
+      get: "/contact/{id}"
+    };
+  }
+
+  /* Create a contact.
+
+  Use this method to create a contact entry in the database.
+  */
+  rpc Create(CreateContactRequest) returns (CreateContactResponse) {
+    option (google.api.http) =  {
+      post: "/contact"
+      body: "payload"
+    };
+  }
+
+}

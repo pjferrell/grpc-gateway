@@ -1,0 +1,6 @@
+version: v1
+plugins:
+  - name: cgreq
+    path: protoc-gen-cgreq/protoc-gen-cgreq
+    out: .
+    opt: paths=source_relative

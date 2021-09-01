@@ -207,33 +207,32 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*descriptor.Response
 
 	if g.reg.IsAllowMerge() {
 		targetOpenAPI := mergeTargetFile(openapis, g.reg.GetMergeFileName())
-
-		if g.reg.IsAtlasPatch() {
-			targetOpenAPI.swagger = atlasSwagger(targetOpenAPI.swagger, g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations())
-			if g.reg.IsWithPrivateOperations() {
-				targetOpenAPI.fileName = strings.Replace(targetOpenAPI.fileName, ".swagger.json", ".private.swagger.json", -1)
-			}
-		}
-
 		f, err := encodeOpenAPI(targetOpenAPI)
 		if err != nil {
 			return nil, fmt.Errorf("failed to encode OpenAPI for %s: %s", g.reg.GetMergeFileName(), err)
+		}
+		if g.reg.IsAtlasPatch() {
+			f.Content = proto.String(atlasSwagger([]byte(*f.Content), g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations()))
+			if g.reg.IsWithPrivateOperations() {
+				privateFileName := strings.Replace(f.GetName(), ".swagger.json", ".private.swagger.json", -1)
+				f.Name = &privateFileName
+			}
 		}
 		files = append(files, f)
 		glog.V(1).Infof("New OpenAPI file will emit")
 	} else {
 		for _, file := range openapis {
-			if g.reg.IsAtlasPatch() {
-				file.swagger = atlasSwagger(file.swagger, g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations())
-				if g.reg.IsWithPrivateOperations() {
-					file.fileName = strings.Replace(file.fileName, ".swagger.json", ".private.swagger.json", -1)
-				}
-			}
 			f, err := encodeOpenAPI(file)
 			if err != nil {
 				return nil, fmt.Errorf("failed to encode OpenAPI for %s: %s", file.fileName, err)
 			}
-
+			if g.reg.IsAtlasPatch() {
+				f.Content = proto.String(atlasSwagger([]byte(*f.Content), g.reg.IsWithPrivateOperations(), g.reg.IsWithCustomAnnotations()))
+				if g.reg.IsWithPrivateOperations() {
+					privateFileName := strings.Replace(f.GetName(), ".swagger.json", ".private.swagger.json", -1)
+					f.Name = &privateFileName
+				}
+			}
 			files = append(files, f)
 			glog.V(1).Infof("New OpenAPI file will emit")
 		}
