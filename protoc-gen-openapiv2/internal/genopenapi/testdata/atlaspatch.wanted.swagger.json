@@ -114,7 +114,6 @@
             "schema": {
               "description": "this message mimics string type, however when put in request rendered as a definition",
               "type": "string",
-              "format": "string",
               "properties": {
                 "requestEnum": {
                   "$ref": "#/definitions/MimicObjectRequestMimicRequestEnum"
@@ -202,7 +201,6 @@
     "testdataMimicObjectResponse": {
       "description": "this message mimics string type, however when put in response rendered as a definition",
       "type": "string",
-      "format": "string",
       "properties": {
         "responseEnum": {
           "$ref": "#/definitions/MimicObjectResponseMimicResponseEnum"

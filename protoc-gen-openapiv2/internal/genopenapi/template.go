@@ -2359,6 +2359,32 @@ func updateswaggerObjectFromJSONSchema(s *openapiSchemaObject, j *openapi_option
 	if j != nil && j.GetFormat() != "" {
 		s.Format = j.GetFormat()
 	}
+
+	if arr := j.GetArray(); len(arr) > 0 {
+		s.Type = "array"
+		for _, e := range arr {
+			if v, ok := wktSchemas[e]; ok {
+				s.Items = (*openapiItemsObject)(&v)
+				s.Ref = ""
+				break
+			} else if swaggerName, swgOk := fullyQualifiedNameToOpenAPIName(e, reg); swgOk && swaggerName != "" {
+				s.Items = (*openapiItemsObject)(&schemaCore{Type: "object", Ref: "#/definitions/" + swaggerName})
+				s.Ref = ""
+				break
+			} else {
+				panic("Must be either valid reference or primitive type")
+			}
+		}
+	} else if t, f := protoJSONSchemaTypeToFormat(j.GetType()); t != "" {
+		s.Type = t
+		s.Format = f
+	} else if j.GetRef() != "" {
+		ref, _ := fullyQualifiedNameToOpenAPIName(j.GetRef(), reg)
+		if ref != "" {
+			s.Ref = "#/definitions/" + ref
+		}
+	}
+
 }
 
 func updateSwaggerObjectFromFieldBehavior(s *openapiSchemaObject, j []annotations.FieldBehavior, field *descriptor.Field) {
