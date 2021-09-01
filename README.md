@@ -543,3 +543,11 @@ See [CONTRIBUTING.md](http://github.com/grpc-ecosystem/grpc-gateway/blob/master/
 
 gRPC-Gateway is licensed under the BSD 3-Clause License.
 See [LICENSE.txt](https://github.com/grpc-ecosystem/grpc-gateway/blob/master/LICENSE.txt) for more details.
+
+# gRPC-Gateway v2 migration
+
+## TODOs
+
+- support paths option (commit [42fa2028fd3ba4a546dd525d9db71573f1992ba1](https://github.com/infobloxopen/grpc-gateway/commit/42fa2028fd3ba4a546dd525d9db71573f1992ba1))
+- fix path component with trailing colon (commit [7226a0d0cd5d6a64d73ed5eba1ce19cad859d70f](https://github.com/infobloxopen/grpc-gateway/commit/7226a0d0cd5d6a64d73ed5eba1ce19cad859d70f))
+- integrate mimic related changes into examples (commits: [b1b91ec20bc061ecbb8cafa21ea9fd96f4e06337](https://github.com/infobloxopen/grpc-gateway/commit/b1b91ec20bc061ecbb8cafa21ea9fd96f4e06337), [731400b9027ec4b92f22bb3591cf64fe8f2da3a6](https://github.com/infobloxopen/grpc-gateway/commit/731400b9027ec4b92f22bb3591cf64fe8f2da3a6), [0fae4222f34c77c7ebcfa74868dc12ed7ca2ff21](https://github.com/infobloxopen/grpc-gateway/commit/0fae4222f34c77c7ebcfa74868dc12ed7ca2ff21)))

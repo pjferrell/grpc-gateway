@@ -741,3 +741,47 @@ func (r *Registry) CheckDuplicateAnnotation(httpMethod string, httpTemplate stri
 	r.annotationMap[a] = struct{}{}
 	return nil
 }
+
+
+func (r *Registry) String() string {
+	return `
+		
+		msgs                       `+ fmt.Sprintf("%+v", r.msgs) +`
+		enums                      `+ fmt.Sprintf("%+v", r.enums) +`
+		files                      `+ fmt.Sprintf("%+v", r.files) +`
+		prefix                     `+ fmt.Sprintf("%s", r.prefix) +`
+		pkgMap                     `+ fmt.Sprintf("%+v", r.pkgMap) +`
+		pkgAliases                 `+ fmt.Sprintf("%+v", r.pkgAliases) +`
+		allowDeleteBody            `+ fmt.Sprintf("%t", r.allowDeleteBody) +`
+		externalHTTPRules          `+ fmt.Sprintf("%+v", r.externalHTTPRules) +`
+		allowMerge                 `+ fmt.Sprintf("%t", r.allowMerge) +`
+		mergeFileName              `+ fmt.Sprintf("%s", r.mergeFileName) +`
+		allowRepeatedFieldsInBody  `+ fmt.Sprintf("%t", r.allowRepeatedFieldsInBody) +`
+		includePackageInTags       `+ fmt.Sprintf("%t", r.includePackageInTags) +`
+		repeatedPathParamSeparator `+ fmt.Sprintf("%+v", r.repeatedPathParamSeparator) +`
+		useJSONNamesForFields      `+ fmt.Sprintf("%t", r.useJSONNamesForFields) +`
+		useFQNForOpenAPIName       `+ fmt.Sprintf("%t", r.useFQNForOpenAPIName) +`
+		useGoTemplate              `+ fmt.Sprintf("%t", r.useGoTemplate) +`
+		enumsAsInts                `+ fmt.Sprintf("%t", r.enumsAsInts) +`
+		disableDefaultErrors       `+ fmt.Sprintf("%t", r.disableDefaultErrors) +`
+		simpleOperationIDs         `+ fmt.Sprintf("%t", r.simpleOperationIDs) +`
+		standalone                 `+ fmt.Sprintf("%t", r.standalone) +`
+		warnOnUnboundMethods       `+ fmt.Sprintf("%t", r.warnOnUnboundMethods) +`
+		proto3OptionalNullable     `+ fmt.Sprintf("%t", r.proto3OptionalNullable) +`
+		fileOptions                `+ fmt.Sprintf("%+v", r.fileOptions) +`
+		methodOptions              `+ fmt.Sprintf("%+v", r.methodOptions) +`
+		messageOptions             `+ fmt.Sprintf("%+v", r.messageOptions) +`
+		serviceOptions             `+ fmt.Sprintf("%+v", r.serviceOptions) +`
+		fieldOptions               `+ fmt.Sprintf("%+v", r.fieldOptions) +`
+		generateUnboundMethods     `+ fmt.Sprintf("%t", r.generateUnboundMethods) +`
+		omitPackageDoc             `+ fmt.Sprintf("%t", r.omitPackageDoc) +`
+		recursiveDepth             `+ fmt.Sprintf("%d", r.recursiveDepth) +`
+		annotationMap              `+ fmt.Sprintf("%+v", r.annotationMap) +`
+		atlasPatch                 `+ fmt.Sprintf("%t", r.atlasPatch) +`
+		privateOperations          `+ fmt.Sprintf("%t", r.privateOperations) +`
+		customAnnotations          `+ fmt.Sprintf("%t", r.customAnnotations) +`
+
+`
+}
+
+

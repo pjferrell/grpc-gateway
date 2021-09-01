@@ -3,6 +3,12 @@
 # You don't have to rebuild these targets by yourself unless you develop
 # gRPC-Gateway itself.
 
+PROJ_DIR                 := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+EXAMPLES_ON_HOST         ?= $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))/examples
+EXAMPLES_IN_CONTAINER    ?= /examples
+DOCKER_RUNNER            ?= docker run -u `id -u`:`id -g` --rm -v $(EXAMPLES_ON_HOST):$(EXAMPLES_IN_CONTAINER)
+SWAGGER_CODEGEN          ?= $(DOCKER_RUNNER) swaggerapi/swagger-codegen-cli:2.4.8
+
 EXAMPLE_CLIENT_DIR=examples/internal/clients
 ECHO_EXAMPLE_SPEC=examples/internal/proto/examplepb/echo_service.swagger.json
 ECHO_EXAMPLE_SRCS=$(EXAMPLE_CLIENT_DIR)/echo/client.go \
@@ -53,7 +59,6 @@ GENERATE_UNBOUND_METHODS_EXAMPLE_SRCS=$(EXAMPLE_CLIENT_DIR)/generateunboundmetho
 		 $(EXAMPLE_CLIENT_DIR)/generateunboundmethods/api_generate_unbound_methods.go
 
 EXAMPLE_CLIENT_SRCS=$(ECHO_EXAMPLE_SRCS) $(ABE_EXAMPLE_SRCS) $(UNANNOTATED_ECHO_EXAMPLE_SRCS) $(RESPONSE_BODY_EXAMPLE_SRCS) $(GENERATE_UNBOUND_METHODS_EXAMPLE_SRCS)
-SWAGGER_CODEGEN=swagger-codegen
 
 $(ECHO_EXAMPLE_SRCS): $(ECHO_EXAMPLE_SPEC)
 	$(SWAGGER_CODEGEN) generate -i $(ECHO_EXAMPLE_SPEC) \
@@ -86,8 +91,8 @@ install:
 	@mkdir -p ${TMP_INSTALL_DIR}
 	cd ${TMP_INSTALL_DIR} && go get \
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 \
-		google.golang.org/protobuf/cmd/protoc-gen-go@v1.26.0 \
-		github.com/bufbuild/buf/cmd/buf@v0.41.0
+		google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
+		github.com/bufbuild/buf/cmd/buf@v0.51.1
 	@rmdir ${TMP_INSTALL_DIR}
 
 	go install \
@@ -125,15 +130,6 @@ proto:
 
 generate: proto $(ECHO_EXAMPLE_SRCS) $(ABE_EXAMPLE_SRCS) $(UNANNOTATED_ECHO_EXAMPLE_SRCS) $(RESPONSE_BODY_EXAMPLE_SRCS) $(GENERATE_UNBOUND_METHODS_EXAMPLE_SRCS)
 
-generate-atlas: install proto
-	$(SWAGGER_CODEGEN) generate -i $(ABE_EXAMPLE_SPEC) \
-    		-l go -o examples/internal/clients/atlas/abe --additional-properties packageName=abe,atlas_patch
-	@rm -f $(EXAMPLE_CLIENT_DIR)/abe/README.md \
-		$(EXAMPLE_CLIENT_DIR)/abe/git_push.sh
-	cp examples/internal/proto/examplepb/a_bit_of_everything.swagger.json swaggy.hevvy.modified.json
-	jq --sort-keys . swaggy.hevvy.modified.json | sponge swaggy.hevvy.modified.json
-	git diff --no-index swaggy.og.json swaggy.hevvy.modified.json --exit-code
-
 test: proto
 	go test -short -race ./...
 	go test -race ./examples/internal/integration -args -network=unix -endpoint=test.sock
@@ -145,3 +141,12 @@ clean:
 	rm -f $(EXAMPLE_CLIENT_SRCS)
 
 .PHONY: generate test clean proto install
+
+# TODO Document
+atlas-build-cgreq:
+	@go build -o $(PROJ_DIR)/protoc-gen-cgreq $(PROJ_DIR)/protoc-gen-cgreq
+
+atlas-regen-tdata: atlas-build-cgreq
+	buf generate \
+		--template ./protoc-gen-cgreq/buf.gen.yaml \
+		--path ./protoc-gen-openapiv2/internal/genopenapi/testdata

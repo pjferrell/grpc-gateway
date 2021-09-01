@@ -16,4 +16,4 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.32
-          args: --enable goimports
+          args: --disable deadcode,errcheck,goimports,ineffassign,gosimple,staticcheck,varcheck,unused

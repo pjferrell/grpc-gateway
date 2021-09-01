@@ -474,9 +474,6 @@ service ABitOfEverythingService {
 		option (google.api.http) = {
 			post: "/v1/{parent=publishers/*}/books"
 			body: "book"
-			option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-                tags: "private"
-            };
 		};
 	}
 	rpc UpdateBook(UpdateBookRequest) returns (Book) {

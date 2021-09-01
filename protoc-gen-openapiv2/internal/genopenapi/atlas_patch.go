@@ -15,10 +15,8 @@ package genopenapi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"strconv"
-
 	"log"
+	"os"
 	"strings"
 
 	"github.com/go-openapi/spec"
@@ -30,29 +28,31 @@ const (
 )
 
 var (
-	//sw       openapiSwaggerObject
+	sw       spec.Swagger
 	seenRefs = map[string]bool{}
 )
 
 // filterPathVars returns new params list with: required "true" and path "in" variables only if they present
 // in URL path request
-// or according to the git commit: "filter out required vars that not in path"
-// https://github.com/infobloxopen/grpc-gateway/pull/24
-func filterPathVars(path string, params openapiParametersObject) openapiParametersObject {
-	var newParams openapiParametersObject
+func filterPathVars(path string, params []spec.Parameter) []spec.Parameter {
+	var newParams []spec.Parameter
 	for _, param := range params {
-		if param.Required && param.In == "path" && !strings.Contains(path, fmt.Sprintf("{%s}", param.Name)) {
-			continue
+		if !param.ParamProps.Required || !(param.ParamProps.In == "path") || strings.Contains(path, fmt.Sprintf("{%s}", param.ParamProps.Name)) {
+			newParams = append(newParams, param)
 		}
-		newParams = append(newParams, param)
 	}
 
 	return newParams
 }
 
-func atlasSwagger(sw *openapiSwaggerObject, withPrivateMethods, withCustomAnnotations bool) *openapiSwaggerObject {
+func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) string {
+	if err := json.Unmarshal(b, &sw); err != nil {
+		fmt.Fprintf(os.Stderr, "error parsing JSON: %v\n", err)
+		os.Exit(1)
+	}
+
 	// remove params that are not part of path
-	for path, item := range sw.Paths {
+	for path, item := range sw.Paths.Paths {
 		if item.Get != nil {
 			newParams := filterPathVars(path, item.Get.Parameters)
 			item.Get.Parameters = newParams
@@ -73,22 +73,22 @@ func atlasSwagger(sw *openapiSwaggerObject, withPrivateMethods, withCustomAnnota
 			newParams := filterPathVars(path, item.Delete.Parameters)
 			item.Delete.Parameters = newParams
 		}
-		// The grpc-gateway side will never output with these methods
-		//if item.Head != nil {
-		//	newParams := filterPathVars(path, item.Head.Parameters)
-		//	item.Head.Parameters = newParams
-		//}
-		//if item.Options != nil {
-		//	newParams := filterPathVars(path, item.Options.Parameters)
-		//	item.Options.Parameters = newParams
-		//}
+		if item.Head != nil {
+			newParams := filterPathVars(path, item.Head.Parameters)
+			item.Head.Parameters = newParams
+		}
+		if item.Options != nil {
+			newParams := filterPathVars(path, item.Options.Parameters)
+			item.Options.Parameters = newParams
+		}
 	}
 
 	// Fix collection operators and IDs and gather refs along Paths.
-	var refs []string
-	fixedPaths := map[string]openapiPathItemObject{}
+
+	var refs []spec.Ref
+	fixedPaths := map[string]spec.PathItem{}
 	privateMethodsOperations := make(map[string][]string, 0)
-	for pn, pi := range sw.Paths {
+	for pn, pi := range sw.Paths.Paths {
 		var pnElements []string
 		for _, v := range strings.Split(pn, "/") {
 			if strings.HasSuffix(v, "id.resource_id}") || strings.HasSuffix(v, ".id}") {
@@ -103,12 +103,12 @@ func atlasSwagger(sw *openapiSwaggerObject, withPrivateMethods, withCustomAnnota
 				continue
 			}
 			if !withPrivateMethods {
-				if IsStringInSlice(op.Tags, "private") {
+				if IsStringInSlice(op.OperationProps.Tags, "private") {
 					privateMethodsOperations[pn] = append(privateMethodsOperations[pn], on)
 				}
 			}
 
-			var fixedParams openapiParametersObject
+			var fixedParams []spec.Parameter
 			for _, param := range op.Parameters {
 
 				// Fix Collection Operators
@@ -116,11 +116,7 @@ func atlasSwagger(sw *openapiSwaggerObject, withPrivateMethods, withCustomAnnota
 					switch strings.TrimPrefix(param.Description, "atlas.api.") {
 
 					case "filtering":
-						fixedParams = append(fixedParams, openapiParameterObject{
-						Name: "_filter",
-						Type: "string",
-						Format: "",
-						Description: `
+						fixedParams = append(fixedParams, *(spec.QueryParam("_filter")).WithDescription(`
 
 A collection of response resources can be filtered by a logical expression string that includes JSON tag references to values in each resource, literal values, and logical operators. If a resource does not have the specified tag, its value is assumed to be null.
 
@@ -141,71 +137,44 @@ Literal values include numbers (integer and floating-point), and quoted (both si
 |  not  |  Logical NOT               | 
 |  ()   |  Groupping Operators       |
 
-						`,
-					})
+						`).Typed("string", ""))
 
 					case "sorting":
-						fixedParams = append(fixedParams, openapiParameterObject{
-							Name: "_order_by",
-							Type: "string",
-							Format: "",
-							Description: `
+						fixedParams = append(fixedParams, *(spec.QueryParam("_order_by")).WithDescription(`
 
 A collection of response resources can be sorted by their JSON tags. For a 'flat' resource, the tag name is straightforward. If sorting is allowed on non-flat hierarchical resources, the service should implement a qualified naming scheme such as dot-qualification to reference data down the hierarchy. If a resource does not have the specified tag, its value is assumed to be null.)
 
 Specify this parameter as a comma-separated list of JSON tag names. The sort direction can be specified by a suffix separated by whitespace before the tag name. The suffix 'asc' sorts the data in ascending order. The suffix 'desc' sorts the data in descending order. If no suffix is specified the data is sorted in ascending order.
 
-						`,
-						})
+						`).Typed("string", ""))
 
 					case "field_selection":
-						fixedParams = append(fixedParams, openapiParameterObject{
-							Name: "_fields",
-							Type: "string",
-							Format: "",
-							Description: `
+						fixedParams = append(fixedParams, *(spec.QueryParam("_fields")).WithDescription(`
 
 A collection of response resources can be transformed by specifying a set of JSON tags to be returned. For a “flat” resource, the tag name is straightforward. If field selection is allowed on non-flat hierarchical resources, the service should implement a qualified naming scheme such as dot-qualification to reference data down the hierarchy. If a resource does not have the specified tag, the tag does not appear in the output resource.
 
 Specify this parameter as a comma-separated list of JSON tag names.
 
-						`,
-						})
-
+						`).Typed("string", ""))
 
 					case "paging":
 						fixedParams = append(
 							fixedParams,
-							openapiParameterObject{
-								Name: "_offset",
-								Type: "integer",
-								Format: "",
-								Description: `
+							*(spec.QueryParam("_offset")).WithDescription(`
 
 The integer index (zero-origin) of the offset into a collection of resources. If omitted or null the value is assumed to be '0'.
 
-							`,
-							},
-							openapiParameterObject{
-								Name: "_limit",
-								Type: "integer",
-								Format: "",
-								Description: `
+							`).Typed("integer", ""),
+							*(spec.QueryParam("_limit")).WithDescription(`
 
 The integer number of resources to be returned in the response. The service may impose maximum value. If omitted the service may impose a default value.
 
-							`,
-							},
-							openapiParameterObject{
-								Name: "_page_token",
-								Type: "string",
-								Format: "",
-								Description: `
+							`).Typed("integer", ""),
+							*(spec.QueryParam("_page_token")).WithDescription(`
 
 The service-defined string used to identify a page of resources. A null value indicates the first page.
 
-							`,
-							},
+							`).Typed("string", ""),
 						)
 					// Skip ID
 					default:
@@ -217,19 +186,9 @@ The service-defined string used to identify a page of resources. A null value in
 				} else if strings.HasPrefix(param.Description, "tagging.api.") {
 					switch strings.TrimPrefix(param.Description, "tagging.api.") {
 					case "filtering":
-						fixedParams = append(fixedParams, openapiParameterObject{
-							Name:        "_tfilter",
-							Type:        "string",
-							Format:      "",
-							Description: "This parameter is used for filtering by tags.",
-						})
+						fixedParams = append(fixedParams, *(spec.QueryParam("_tfilter")).WithDescription("This parameter is used for filtering by tags.").Typed("string", ""))
 					case "sorting":
-						fixedParams = append(fixedParams, openapiParameterObject{
-							Name: "_torder_by",
-							Type: "string",
-							Format: "",
-							Description: "This parameter is used for sorting by tags.",
-						})
+						fixedParams = append(fixedParams, *(spec.QueryParam("_torder_by")).WithDescription("This parameter is used for sorting by tags.").Typed("string", ""))
 					default:
 						fixedParams = append(fixedParams, param)
 					}
@@ -244,83 +203,59 @@ The service-defined string used to identify a page of resources. A null value in
 			op.Parameters = fixedParams
 
 			// Wrap responses
-			// Seems that responses is a MAP, where the key is the status code
-			if op.Responses != nil {
-
-				// I think what the original author was trying to do here was make sure we didn't duplicate work
-				// with the 201 -> 300 check
+			if op.Responses.StatusCodeResponses != nil {
 				// check if StatusCodeResponses has 201 >= x < 300 then delete 200 and don't go to isNilRef check
 				exists := false
-				for code := range op.Responses {
-					if code == "default" {
-						continue
-					}
-
-					c, err := strconv.ParseInt(code, 10, 32)
-					if err != nil {
-						panic(err)
-					}
-					if c >= 201 && c < 300 {
+				for code := range op.Responses.StatusCodeResponses {
+					if code >= 201 && code < 300 {
 						exists = true
 					}
 					break
 				}
-
-				// khous: this probably means that this has already been processed, so then make sure that the 200
-				// response is removed?
-				// Atlas patch never uses a 200 response code afaict
-				// I thiiink, this might not be necessary. This might be an artifact of reading in json, then deserializin
-				// and then modifying the result, then reserializing. I think the refs get embedded or somethin
 				if exists {
-					delete(op.Responses, "200")
+					delete(op.Responses.StatusCodeResponses, 200)
 				} else {
-					rsp := op.Responses["200"]
+					rsp := op.Responses.StatusCodeResponses[200]
 					if !isNilRef(rsp.Schema.Ref) {
+						s, _, err := rsp.Schema.Ref.GetPointer().Get(sw)
+						if err != nil {
+							panic(err)
+						}
 
-						//s, _, err := rsp.Schema.Ref.GetPointer().Get(sw)
-						schema  := rsp.Schema
-						//if err != nil {
-						//	panic(err)
-						//}
-
-						//schema := s.(spec.Schema)
+						schema := s.(spec.Schema)
 						if schema.Properties == nil {
-							schema.Properties = &openapiSchemaObjectProperties{}
+							schema.Properties = map[string]spec.Schema{}
 						}
 
 						def := sw.Definitions[trim(rsp.Schema.Ref)]
-						glog.Errorf("wanglin this jangle: %s", trim(rsp.Schema.Ref))
 						if rsp.Description == "" {
 							rsp.Description = on + " operation response"
 						}
 
 						switch on {
 						case "DELETE":
-							if len(*(def.Properties)) == 0 {
+							if len(def.Properties) == 0 {
 								rsp.Description = "No Content"
-								//rsp.Schema = nil
-								op.Responses[opToStatusCode(on)] = rsp
-								// Removing this line below tentatively to prevent modifying the actual definiton
-								// by reference. The symptom of this was a def with no properties
-								//delete(sw.Definitions, trim(rsp.Ref))
-								delete(op.Responses, "200")
+								rsp.Schema = nil
+								op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
+								delete(sw.Definitions, trim(rsp.Ref))
+								delete(op.Responses.StatusCodeResponses, 200)
 								break
 							}
-							//sw.Definitions[trim(rsp.Schema.Ref)] = schema
+							sw.Definitions[trim(rsp.Schema.Ref)] = schema
 							refs = append(refs, rsp.Schema.Ref)
-							op.Responses["200"] = rsp
+							op.Responses.StatusCodeResponses[200] = rsp
 						default:
-							//sw.Definitions[trim(rsp.Schema.Ref)] = schema
+							sw.Definitions[trim(rsp.Schema.Ref)] = schema
 							refs = append(refs, rsp.Schema.Ref)
-							delete(op.Responses, "200")
-							op.Responses[opToStatusCode(on)] = rsp
+							delete(op.Responses.StatusCodeResponses, 200)
+							op.Responses.StatusCodeResponses[opToStatusCode(on)] = rsp
 						}
 					}
 				}
 			}
 
-			// XXX: this is the thing that causes the stutter
-			//op.OperationID = strings.Join(op.Tags, "") + op.OperationID
+			op.ID = strings.Join(op.Tags, "") + op.ID
 
 		}
 
@@ -346,38 +281,37 @@ The service-defined string used to identify a page of resources. A null value in
 		fixedPaths[pn] = pitem
 	}
 
-	sw.Paths = fixedPaths
+	sw.Paths.Paths = fixedPaths
 
 	// Break recursive rules introduced by many-to-many.
-	//for _, r := range refs {
-	//	seenRefs[trim(r)] = true
-	//	s, _, err := r.GetPointer().Get(sw)
-	//	if err != nil {
-	//		continue
-	//	}
+	for _, r := range refs {
+		seenRefs[trim(r)] = true
+		s, _, err := r.GetPointer().Get(sw)
+		if err != nil {
+			continue
+		}
 
-		//if _, ok := s.(spec.Schema); ok {
-		//	checkRecursion(s.(spec.Schema), r, []string{})
-		//}
-	//}
+		if _, ok := s.(spec.Schema); ok {
+			checkRecursion(s.(spec.Schema), r, []string{})
+		}
+	}
 
 	// Cleanup unused definitions.
-	// XXX: This is the thing that deletes all the definitions for some reason
-	//for dn, v := range sw.Definitions {
-	//	// hidden definitions should become explicit.
-	//	if strings.HasPrefix(dn, "_") {
-	//		sw.Definitions[strings.TrimPrefix(dn, "_")] = v
-	//		delete(sw.Definitions, dn)
-	//		seenRefs[dn] = true
-	//	}
-	//
-	//	if seenRefs[dn] == false {
-	//		delete(sw.Definitions, dn)
-	//	}
-	//}
+	for dn, v := range sw.Definitions {
+		// hidden definitions should become explicit.
+		if strings.HasPrefix(dn, "_") {
+			sw.Definitions[strings.TrimPrefix(dn, "_")] = v
+			delete(sw.Definitions, dn)
+			seenRefs[dn] = true
+		}
+
+		if seenRefs[dn] == false {
+			delete(sw.Definitions, dn)
+		}
+	}
 
 	for pn, on := range privateMethodsOperations {
-		pi := sw.Paths[pn]
+		pi := sw.Paths.Paths[pn]
 		for _, operation := range on {
 			switch operation {
 			case "GET":
@@ -394,24 +328,28 @@ The service-defined string used to identify a page of resources. A null value in
 		}
 
 		if IsPathEmpty(pi) {
-			delete(sw.Paths, pn)
+			delete(sw.Paths.Paths, pn)
 			continue
 		}
 
-		sw.Paths[pn] = pi
+		sw.Paths.Paths[pn] = pi
 	}
 
 	if !withPrivateMethods {
-		sw.Definitions = filterDefinitions(sw)
+		sw.Definitions = filterDefinitions()
 	}
 
-	// khous: openapiv2 provides a way to override the default examples
-	// Commenting this code out for now
-	//if withCustomAnnotations {
-	//	sw.Definitions = applyCustomAnnotations(sw.Definitions)
-	//}
+	if withCustomAnnotations {
+		sw.Definitions = applyCustomAnnotations(sw.Definitions)
+	}
 
-	return sw
+	bOut, err := json.MarshalIndent(sw, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error marshalling result: %v", err)
+		os.Exit(1)
+	}
+
+	return fmt.Sprintf("%s", bOut)
 }
 
 func getPropRef(p spec.Schema) spec.Ref {
@@ -430,107 +368,101 @@ func setPropRef(p *spec.Schema, r spec.Ref) {
 	}
 }
 
-//func checkRecursion(s openapiSchemaObject, r string, path []string) spec.Ref {
-//	var newRefLength int
-//	var newRefName string
-//
-//	npath := path[:]
-//	npath = append(npath, trim(r))
-//
-//
-//	newProps := map[string]openapiSchemaObject{}
-//
-//	for np, p := range *s.Properties {
+func checkRecursion(s spec.Schema, r spec.Ref, path []string) spec.Ref {
+	var newRefLength int
+	var newRefName string
 
-		// Some bullshit, that doesn't belong here
-		// post-processing properties I guess
-		//if p.Description == "atlas.api.identifier" {
-		//	p.Description = "The resource identifier."
-		//	if np == "id" {
-		//		p.ReadOnly = true
-		//	}
-		//}
-		//
-		//// TBD: common pattern.
-		//if np == "created_time" || np == "updated_time" || np == "id" {
-		//	p.ReadOnly = true
-		//}
-		// End bullshit... for now
+	var newProps = map[string]spec.Schema{}
+
+	npath := path[:]
+	npath = append(npath, trim(r))
+
+	newProps = map[string]spec.Schema{}
+	for np, p := range s.Properties {
+		if p.Description == "atlas.api.identifier" {
+			p.Description = "The resource identifier."
+			if np == "id" {
+				p.ReadOnly = true
+			}
+		}
+
+		// TBD: common pattern.
+		if np == "created_time" || np == "updated_time" || np == "id" {
+			p.ReadOnly = true
+		}
 
 		// FIXME: copy additionalProperties as-is.
-		// look through the props and add them to seen refs?
+		if addProps := p.AdditionalProperties; addProps != nil {
+			if addProps.Schema != nil && !isNilRef(addProps.Schema.Ref) {
+				seenRefs[trim(addProps.Schema.Ref)] = true
+			}
+		}
 
-//		if addProps := p.AdditionalProperties; addProps != nil {
-//			if addProps.Schema != nil && !isNilRef(addProps.Schema.Ref) {
-//				seenRefs[trim(addProps.Schema.Ref)] = true
-//			}
-//		}
-//
-//		newProps[np] = p
-//
-//		sr := getPropRef(p)
-//
-//		if isNilRef(sr) {
-//			continue
-//		}
-//
-//		for i, prefs := range npath {
-//			if trim(sr) == prefs {
-//				delete(newProps, np)
-//				if newRefLength < len(npath)-i {
-//					newRefName = strings.Join(reverse(npath[i:]), "_In_")
-//					newRefLength = len(npath) - i
-//				}
-//			}
-//		}
-//
-//		if _, ok := newProps[np]; !ok {
-//			continue
-//		}
-//
-//		ss, _, _ := sr.GetPointer().Get(sw)
-//		if _, ok := ss.(spec.Schema); !ok {
-//			continue
-//		}
-//
-//		nr := checkRecursion(ss.(spec.Schema), sr, npath)
-//
-//		if trim(nr) != trim(sr) {
-//			if newRefName == "" {
-//				newRefName = strings.TrimPrefix(trim(nr), trim(sr)+"_In_")
-//			}
-//
-//			delete(newProps, np)
-//
-//			if len(p.Type) == 1 && p.Type[0] == "array" {
-//				newProps[np] = *spec.ArrayProperty(spec.RefProperty(nr.String()))
-//			} else {
-//				newProps[np] = *spec.RefProperty(nr.String())
-//			}
-//		} else {
-//			seenRefs[trim(sr)] = true
-//		}
-//	}
-//
-//	if newRefName != "" {
-//		seenRefs[newRefName] = true
-//		// underscore hides definitions from following along recursive path.
-//		sw.Definitions["_"+newRefName] = *(&spec.Schema{}).WithProperties(newProps)
-//		return spec.MustCreateRef("#/definitions/" + newRefName)
-//	} else {
-//		s.Properties = newProps
-//		sw.Definitions[trim(r)] = s
-//	}
-//
-//	return r
-//}
+		newProps[np] = p
 
-func trim(r string) string {
-	return strings.TrimPrefix(r, "#/definitions/")
+		sr := getPropRef(p)
+
+		if isNilRef(sr) {
+			continue
+		}
+
+		for i, prefs := range npath {
+			if trim(sr) == prefs {
+				delete(newProps, np)
+				if newRefLength < len(npath)-i {
+					newRefName = strings.Join(reverse(npath[i:]), "_In_")
+					newRefLength = len(npath) - i
+				}
+			}
+		}
+
+		if _, ok := newProps[np]; !ok {
+			continue
+		}
+
+		ss, _, _ := sr.GetPointer().Get(sw)
+		if _, ok := ss.(spec.Schema); !ok {
+			continue
+		}
+
+		nr := checkRecursion(ss.(spec.Schema), sr, npath)
+
+		if trim(nr) != trim(sr) {
+			if newRefName == "" {
+				newRefName = strings.TrimPrefix(trim(nr), trim(sr)+"_In_")
+			}
+
+			delete(newProps, np)
+
+			if len(p.Type) == 1 && p.Type[0] == "array" {
+				newProps[np] = *spec.ArrayProperty(spec.RefProperty(nr.String()))
+			} else {
+				newProps[np] = *spec.RefProperty(nr.String())
+			}
+		} else {
+			seenRefs[trim(sr)] = true
+		}
+	}
+
+	if newRefName != "" {
+		seenRefs[newRefName] = true
+		// underscore hides definitions from following along recursive path.
+		sw.Definitions["_"+newRefName] = *(&spec.Schema{}).WithProperties(newProps)
+		return spec.MustCreateRef("#/definitions/" + newRefName)
+	} else {
+		s.Properties = newProps
+		sw.Definitions[trim(r)] = s
+	}
+
+	return r
 }
 
-func isNilRef(r string) bool {
-	return r == ""
+func trim(r spec.Ref) string {
+	return strings.TrimPrefix(r.String(), "#/definitions/")
+}
+
+func isNilRef(r spec.Ref) bool {
+	return r.String() == ""
 }
 
 func reverse(s []string) []string {
@@ -542,8 +474,8 @@ func reverse(s []string) []string {
 	return news
 }
 
-func pathItemAsMap(pi openapiPathItemObject) map[string]*openapiOperationObject {
-	return map[string]*openapiOperationObject{
+func pathItemAsMap(pi spec.PathItem) map[string]*spec.Operation {
+	return map[string]*spec.Operation{
 		"GET":    pi.Get,
 		"POST":   pi.Post,
 		"PUT":    pi.Put,
@@ -552,13 +484,13 @@ func pathItemAsMap(pi openapiPathItemObject) map[string]*openapiOperationObject 
 	}
 }
 
-func opToStatusCode(on string) string {
-	return map[string]string{
-		"GET":    "200",
-		"POST":   "201",
-		"PUT":    "201",
-		"PATCH":  "201",
-		"DELETE": "204",
+func opToStatusCode(on string) int {
+	return map[string]int{
+		"GET":    200,
+		"POST":   201,
+		"PUT":    201,
+		"PATCH":  201,
+		"DELETE": 204,
 	}[on]
 }
 
@@ -582,20 +514,23 @@ func IsStringInSlice(slice []string, str string) bool {
 	return false
 }
 
-func IsPathEmpty(pi openapiPathItemObject) bool {
-	return pi.Get == nil && pi.Post == nil && pi.Put == nil && pi.Patch == nil && pi.Delete == nil
+func IsPathEmpty(pi spec.PathItem) bool {
+	if pi.Get != nil || pi.Post != nil || pi.Put != nil || pi.Patch != nil || pi.Delete != nil {
+		return false
+	}
+	return true
 }
 
-func filterDefinitions(sw *openapiSwaggerObject) (newDefinitions openapiDefinitionsObject) {
-	//marh, _ := sw.MarshalJSON()
-	//v := map[string]interface{}{}
-	//if err := json.Unmarshal(marh, &v); err != nil {
-	//	panic(err.Error())
-	//}
-	defs := sw.Definitions
-	newDefinitions = make(openapiDefinitionsObject)
+func filterDefinitions() (newDefinitions spec.Definitions) {
+	marh, _ := sw.MarshalJSON()
+	v := map[string]interface{}{}
+	if err := json.Unmarshal(marh, &v); err != nil {
+		panic(err.Error())
+	}
+	defs, _ := v["definitions"].(map[string]interface{})
+	newDefinitions = make(spec.Definitions)
 
-	for rk := range gatherRefs(sw.Paths) {
+	for rk := range gatherRefs(v["paths"]) {
 		rName := refToName(rk)
 		newDefinitions[rName] = sw.Definitions[rName]
 		for rrName := range gatherDefinitionRefs(rk, defs) {
@@ -606,14 +541,14 @@ func filterDefinitions(sw *openapiSwaggerObject) (newDefinitions openapiDefiniti
 	return newDefinitions
 }
 
-func gatherDefinitionRefs(ref string, defs openapiDefinitionsObject) map[string]struct{} {
+func gatherDefinitionRefs(ref string, defs map[string]interface{}) map[string]struct{} {
 	var refs = make(map[string]struct{})
 
 	gatherDefinitionRefsAux(refToName(ref), defs, refs)
 	return refs
 }
 
-func gatherDefinitionRefsAux(ref string, defs openapiDefinitionsObject, refs map[string]struct{}) {
+func gatherDefinitionRefsAux(ref string, defs map[string]interface{}, refs map[string]struct{}) {
 	for r := range gatherRefs(defs[ref]) {
 		refs[r] = struct{}{}
 		gatherDefinitionRefsAux(r, defs, refs)
@@ -622,7 +557,7 @@ func gatherDefinitionRefsAux(ref string, defs openapiDefinitionsObject, refs map
 	return
 }
 
-func gatherRefs(paths openapiPathsObject) map[string]struct{} {
+func gatherRefs(v interface{}) map[string]struct{} {
 	refs := map[string]struct{}{}
 	switch v := v.(type) {
 	case map[string]interface{}:
@@ -635,7 +570,7 @@ func gatherRefs(paths openapiPathsObject) map[string]struct{} {
 				refs[rk] = struct{}{}
 			}
 		}
-	case []interface{}
+	case []interface{}:
 		for _, vv := range v {
 			for rk := range gatherRefs(vv) {
 				refs[rk] = struct{}{}
@@ -650,18 +585,13 @@ func refToName(ref string) string {
 	return strings.TrimPrefix(ref, "#/definitions/")
 }
 
-func applyCustomAnnotations(defs openapiDefinitionsObject) openapiDefinitionsObject {
+func applyCustomAnnotations(defs spec.Definitions) spec.Definitions {
 	for k, v := range defs {
 		v.Description = v.Title + v.Description
 		v.Title = ""
 
 		if title, ok := getAnnotationValue(v.Description, titleAnnotation); ok {
-			var titleBytes []byte
-			if  err := title.UnmarshalJSON(titleBytes); err != nil {
-				panic(err)
-			}
-
-			v.Title = string(titleBytes)
+			v.Title, ok = title.(string)
 			if !ok {
 				log.Printf("unsupported title type in %s\n", v.Type)
 			}
@@ -678,22 +608,21 @@ func applyCustomAnnotations(defs openapiDefinitionsObject) openapiDefinitionsObj
 			defs[k] = v
 		}
 
-		// This seems to operate on things that don't exist in the core objects
-		//for fk, fv := range v.Properties {
-		//	fv.Description = fv.Title + fv.Description
-		//	fv.Title = ""
-		//
-		//	if example, ok := getAnnotationValue(fv.Description, exampleAnnotation); ok {
-		//		fv.Example = example
-		//		fv.Description = removeSpecials(fv.Description, exampleAnnotation)
-		//
-		//		defs[k].Properties[fk] = fv
-		//	}
-		//}
+		for fk, fv := range v.Properties {
+			fv.Description = fv.Title + fv.Description
+			fv.Title = ""
 
-		//if v.Definitions != nil {
-		//	v.Definitions = applyCustomAnnotations(v.Definitions)
-		//}
+			if example, ok := getAnnotationValue(fv.Description, exampleAnnotation); ok {
+				fv.Example = example
+				fv.Description = removeSpecials(fv.Description, exampleAnnotation)
+
+				defs[k].Properties[fk] = fv
+			}
+		}
+
+		if v.Definitions != nil {
+			v.Definitions = applyCustomAnnotations(v.Definitions)
+		}
 	}
 
 	return defs
@@ -718,7 +647,7 @@ func removeSpecials(comment, annotation string) (res string) {
 	return strings.Join(lines, "\n")
 }
 
-func getAnnotationValue(comment, prefix string) (json.RawMessage, bool) {
+func getAnnotationValue(comment, prefix string) (interface{}, bool) {
 	var (
 		value string
 		lines = strings.Split(comment, "\n")
