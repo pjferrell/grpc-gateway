@@ -5,6 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "protoc-gen-openapiv2/internal/genopenapi/testdata/imports/collection_operators.proto";
 
 option go_package = "github.com/infobloxopen/atlas-gentool/testdata;test";
 
@@ -56,6 +57,19 @@ message CreateContactRequest {
 
 message CreateContactResponse {
   Contact result = 1;
+}
+
+message ListContactRequest {
+  infoblox.api.Filtering filter = 1;
+  infoblox.api.Sorting order_by = 2;
+  infoblox.api.FieldSelection fields = 3;
+  infoblox.api.Pagination paging = 4;
+  reserved 5;
+}
+
+message ListContactResponse {
+  repeated Contact results = 1;
+  infoblox.api.PageInfo page = 2;
 }
 
 message MimicObjectResponse {
@@ -127,6 +141,16 @@ service ContactService {
     };
   }
 
+  /* List contacts.
+
+  Use this method to retrive list of contact objects.
+  */
+  rpc List (ListContactRequest) returns (ListContactResponse) {
+    option (google.api.http) = {
+      get: "/contacts"
+    };
+  }
+
   /* Test getting objects with mimicked primitive types.
 
   For more info see https://github.com/infobloxopen/grpc-gateway/commit/b1b91ec20bc061ecbb8cafa21ea9fd96f4e06337
@@ -147,5 +171,4 @@ service ContactService {
       body: "*",
     };
   }
-
 }

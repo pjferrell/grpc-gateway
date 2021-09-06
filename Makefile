@@ -148,5 +148,6 @@ atlas-build-cgreq:
 
 atlas-regen-tdata: atlas-build-cgreq
 	buf generate \
-		--template ./protoc-gen-cgreq/buf.gen.yaml \
-		--path ./protoc-gen-openapiv2/internal/genopenapi/testdata
+		--config protoc-gen-openapiv2/internal/genopenapi/testdata/buf.yaml \
+		--template protoc-gen-openapiv2/internal/genopenapi/testdata/buf.gen.yaml \
+		--path protoc-gen-openapiv2/internal/genopenapi/testdata/*.proto
