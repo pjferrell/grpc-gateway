@@ -398,7 +398,7 @@ func (r *Registry) IsWithCustomAnnotations() bool {
 
 // SetCustomAnnotations if true, use atlas custom annotations
 func (r *Registry) SetCustomAnnotations(custom bool) {
-	r.atlasPatch = custom
+	r.customAnnotations = custom
 }
 
 // SetPrefix registers the prefix to be added to go package paths generated from proto package names.
