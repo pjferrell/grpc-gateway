@@ -20,7 +20,7 @@ Because **_protoc-gen-openapiv2_** takes an instance of CodeGeneratorRequest for
 - atlas-build-cgreq
 - atlas-regen-tdata
 
-**atlas-build-cgreq** target builds the executable out of the source code and puts it into the same directory. Apart from the plugin executable, the directory contans _buf.yaml_ and _buf.gen.yaml_ [buf](https://github.com/bufbuild/buf-tour) configuration files to control protoc buffer compilation.  
+**atlas-build-cgreq** target builds the executable out of the source code and puts it into the same directory. 
 **atlas-regen-tdata** target rebuilds the the executable every time and generates corresponding *.cgreq files out of proto files found in
 
 ```
