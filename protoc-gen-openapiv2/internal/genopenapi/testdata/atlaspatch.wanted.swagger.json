@@ -27,7 +27,7 @@
           "ContactService"
         ],
         "summary": "Create a contact.",
-        "operationId": "ContactServiceContactService_Create",
+        "operationId": "ContactService_Create",
         "parameters": [
           {
             "name": "body",
@@ -53,12 +53,11 @@
         "tags": [
           "ContactService"
         ],
-        "operationId": "ContactServiceContactService_Get",
+        "operationId": "ContactService_Get",
         "parameters": [
           {
-            "type": "integer",
-            "format": "int32",
-            "description": "Unique ID number for this contact.",
+            "type": "string",
+            "description": "An application specific resource identity of a resource",
             "name": "id",
             "in": "path",
             "required": true
@@ -68,7 +67,83 @@
           "200": {
             "description": "A successful response.",
             "schema": {
+              "$ref": "#/definitions/testdataGetContactResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Use this method to update a contact identified by its id.",
+        "tags": [
+          "ContactService"
+        ],
+        "summary": "Update a contact.",
+        "operationId": "ContactService_Update",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "An application specific resource identity of a resource",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
               "$ref": "#/definitions/testdataContact"
+            }
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/testdataUpdateContactResponse"
+            }
+          }
+        }
+      },
+      "patch": {
+        "description": "Use this method to update a contact identified by its id.",
+        "tags": [
+          "ContactService"
+        ],
+        "summary": "Update a contact.",
+        "operationId": "ContactService_Update2",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "An application specific resource identity of a resource",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/testdataContact"
+            }
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/testdataUpdateContactResponse"
             }
           }
         }
@@ -81,11 +156,11 @@
           "ContactService"
         ],
         "summary": "List contacts.",
-        "operationId": "ContactServiceContactService_List",
+        "operationId": "ContactService_List",
         "parameters": [
           {
             "type": "string",
-            "description": "\n\nA collection of response resources can be filtered by a logical expression string that includes JSON tag references to values in each resource, literal values, and logical operators. If a resource does not have the specified tag, its value is assumed to be null.\n\nLiteral values include numbers (integer and floating-point), and quoted (both single- or double-quoted) literal strings, and 'null'. The following operators are commonly used in filter expressions:\n\n|  Op   |  Description               | \n|  --   |  -----------               | \n|  ==   |  Equal                     | \n|  !=   |  Not Equal                 | \n|  \u003e    |  Greater Than              | \n|   \u003e=  |  Greater Than or Equal To  | \n|  \u003c    |  Less Than                 | \n|  \u003c=   |  Less Than or Equal To     | \n|  and  |  Logical AND               | \n|  ~    |  Matches Regex             | \n|  !~   |  Does Not Match Regex      | \n|  or   |  Logical OR                | \n|  not  |  Logical NOT               | \n|  ()   |  Groupping Operators       |\n\n\t\t\t\t\t\t",
+            "description": "\n\nA collection of response resources can be filtered by a logical expression string that includes JSON tag references to values in each resource, literal values, and logical operators. If a resource does not have the specified tag, its value is assumed to be null.\n\nLiteral values include numbers (integer and floating-point), and quoted (both single- or double-quoted) literal strings, and 'null'. The following operators are commonly used in filter expressions:\n\n|  Op   |  Description               | \n|  --   |  -----------               | \n|  ==   |  Equal                     | \n|  !=   |  Not Equal                 | \n|  \u003e    |  Greater Than              | \n|  \u003e=   |  Greater Than or Equal To  | \n|  \u003c    |  Less Than                 | \n|  \u003c=   |  Less Than or Equal To     | \n|  and  |  Logical AND               | \n|  ~    |  Matches Regex             | \n|  !~   |  Does Not Match Regex      | \n|  or   |  Logical OR                | \n|  not  |  Logical NOT               | \n|  ()   |  Groupping Operators       |\n\n\t\t\t\t\t\t",
             "name": "_filter",
             "in": "query"
           },
@@ -137,7 +212,7 @@
           "ContactService"
         ],
         "summary": "Test getting objects with mimicked primitive types.",
-        "operationId": "ContactServiceContactService_GetMimic",
+        "operationId": "ContactService_GetMimic",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -155,7 +230,7 @@
           "ContactService"
         ],
         "summary": "Test posting objects with mimicked primitive types.",
-        "operationId": "ContactServiceContactService_PostMimic",
+        "operationId": "ContactService_PostMimic",
         "parameters": [
           {
             "type": "string",
@@ -211,6 +286,7 @@
         "WORK"
       ]
     },
+    "MimicObjectRequestMimicRequestEnum": {},
     "MimicObjectResponseMimicResponseEnum": {
       "type": "string",
       "default": "VALUE_ONE",
@@ -246,9 +322,8 @@
           "type": "string"
         },
         "id": {
-          "description": "Unique ID number for this contact.",
-          "type": "integer",
-          "format": "int32",
+          "description": "The resource identifier.",
+          "type": "string",
           "readOnly": true
         },
         "lastUpdated": {
@@ -267,6 +342,14 @@
       }
     },
     "testdataCreateContactResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/testdataContact"
+        }
+      }
+    },
+    "testdataGetContactResponse": {
       "type": "object",
       "properties": {
         "result": {
@@ -300,6 +383,14 @@
         },
         "responseValueTwo": {
           "type": "string"
+        }
+      }
+    },
+    "testdataUpdateContactResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/testdataContact"
         }
       }
     }

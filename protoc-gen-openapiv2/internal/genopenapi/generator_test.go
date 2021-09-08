@@ -151,7 +151,7 @@ func Test_generator_Generate(t *testing.T) {
 			with.registry.SetMergeFileName("apidocs")
 			// Atlas specific flags
 			with.registry.SetAtlasPatch(true)
-			with.registry.SetPrivateOperations(true)
+			with.registry.SetPrivateOperations(false) // false - do not show private; true - show them
 			with.registry.SetCustomAnnotations(true)
 		default:
 			t.Fatalf("Unimplemented test %q", tname)
@@ -193,11 +193,6 @@ func Test_generator_Generate(t *testing.T) {
 			name:    testAtlaspatch,
 			wantErr: false,
 		},
-
-		// TODO
-		// test private methods
-		// comments extraction
-
 	}
 
 	for _, tt := range tests {

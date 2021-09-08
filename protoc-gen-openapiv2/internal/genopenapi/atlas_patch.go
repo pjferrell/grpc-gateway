@@ -91,7 +91,9 @@ func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) stri
 	for pn, pi := range sw.Paths.Paths {
 		var pnElements []string
 		for _, v := range strings.Split(pn, "/") {
-			if strings.HasSuffix(v, "id.resource_id}") || strings.HasSuffix(v, ".id}") {
+			if strings.HasSuffix(v, "id.resource_id}") ||
+				strings.HasSuffix(v, "id.resourceId}") ||
+				strings.HasSuffix(v, ".id}") {
 				pnElements = append(pnElements, "{id}")
 			} else {
 				pnElements = append(pnElements, v)
@@ -102,6 +104,7 @@ func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) stri
 			if op == nil {
 				continue
 			}
+
 			if !withPrivateMethods {
 				if IsStringInSlice(op.OperationProps.Tags, "private") {
 					privateMethodsOperations[pn] = append(privateMethodsOperations[pn], on)
@@ -110,7 +113,6 @@ func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) stri
 
 			var fixedParams []spec.Parameter
 			for _, param := range op.Parameters {
-
 				// Fix Collection Operators
 				if strings.HasPrefix(param.Description, "atlas.api.") {
 					switch strings.TrimPrefix(param.Description, "atlas.api.") {
@@ -127,7 +129,7 @@ Literal values include numbers (integer and floating-point), and quoted (both si
 |  ==   |  Equal                     | 
 |  !=   |  Not Equal                 | 
 |  >    |  Greater Than              | 
-|   >=  |  Greater Than or Equal To  | 
+|  >=   |  Greater Than or Equal To  | 
 |  <    |  Less Than                 | 
 |  <=   |  Less Than or Equal To     | 
 |  and  |  Logical AND               | 
@@ -180,7 +182,9 @@ The service-defined string used to identify a page of resources. A null value in
 					default:
 					}
 					// Replace resource_id with id
-				} else if strings.HasSuffix(param.Name, "id.resource_id") || strings.HasSuffix(param.Name, ".id") {
+				} else if strings.HasSuffix(param.Name, "id.resource_id") ||
+					strings.HasSuffix(param.Name, "id.resourceId") ||
+					strings.HasSuffix(param.Name, ".id") {
 					param.Name = "id"
 					fixedParams = append(fixedParams, param)
 				} else if strings.HasPrefix(param.Description, "tagging.api.") {
@@ -254,9 +258,6 @@ The service-defined string used to identify a page of resources. A null value in
 					}
 				}
 			}
-
-			op.ID = strings.Join(op.Tags, "") + op.ID
-
 		}
 
 		pitem := fixedPaths[pn]

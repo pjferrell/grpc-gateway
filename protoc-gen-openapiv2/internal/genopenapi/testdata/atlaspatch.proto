@@ -2,9 +2,11 @@ syntax = "proto3";
 package testdata;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "protoc-gen-openapiv2/internal/genopenapi/testdata/imports/resource.proto";
 import "protoc-gen-openapiv2/internal/genopenapi/testdata/imports/collection_operators.proto";
 
 option go_package = "github.com/infobloxopen/atlas-gentool/testdata;test";
@@ -27,7 +29,8 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 
 message Contact {
   // Unique ID number for this contact.
-  int32 id = 1;
+  atlas.rpc.Identifier id = 1;
+
   string name = 2;
   string email = 3;
 
@@ -48,7 +51,11 @@ message Contact {
 
 message GetContactRequest {
   // Unique ID number for this contact.
-  int32 id = 1;
+  atlas.rpc.Identifier id = 1;
+}
+
+message GetContactResponse {
+  Contact result = 1;
 }
 
 message CreateContactRequest {
@@ -70,6 +77,24 @@ message ListContactRequest {
 message ListContactResponse {
   repeated Contact results = 1;
   infoblox.api.PageInfo page = 2;
+}
+
+message UpdateContactRequest {
+  Contact payload = 1;
+  google.protobuf.FieldMask fields = 2;
+}
+
+message UpdateContactResponse {
+  Contact result = 1;
+}
+
+message GetPrivateContactRequest {
+  // Unique ID number for this contact.
+  atlas.rpc.Identifier id = 1;
+}
+
+message GetPrivateContactResponse {
+  Contact result = 1;
 }
 
 message MimicObjectResponse {
@@ -124,9 +149,9 @@ message MimicObjectHidden {
 }
 
 service ContactService {
-  rpc Get (GetContactRequest) returns (Contact) {
+  rpc Get (GetContactRequest) returns (GetContactResponse) {
     option (google.api.http) = {
-      get: "/contact/{id}"
+      get: "/contact/{id.resource_id}"
     };
   }
 
@@ -148,6 +173,36 @@ service ContactService {
   rpc List (ListContactRequest) returns (ListContactResponse) {
     option (google.api.http) = {
       get: "/contacts"
+    };
+  }
+
+  /* Update a contact.
+
+  Use this method to update a contact identified by its id.
+  */
+  rpc Update(UpdateContactRequest) returns (UpdateContactResponse) {
+    option (google.api.http) = {
+      put: "/contact/{payload.id.resource_id}"
+      body: "payload"
+      additional_bindings: {
+        patch: "/contact/{payload.id.resource_id}"
+        body: "payload"
+      }
+    };
+  }
+
+
+  /* Test private option.
+
+  Use this method to check if an RPC tagged as private is excluded from
+  generated OpenAPI document.
+  */
+  rpc GetPrivate (GetPrivateContactRequest) returns (GetPrivateContactResponse) {
+    option (google.api.http) = {
+      get: "/private/contact/{id.resource_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "private"
     };
   }
 
