@@ -104,6 +104,7 @@ func atlasSwagger(b []byte, withPrivateMethods, withCustomAnnotations bool) stri
 			if op == nil {
 				continue
 			}
+
 			if !withPrivateMethods {
 				if IsStringInSlice(op.OperationProps.Tags, "private") {
 					privateMethodsOperations[pn] = append(privateMethodsOperations[pn], on)

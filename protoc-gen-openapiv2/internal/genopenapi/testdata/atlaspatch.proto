@@ -54,6 +54,10 @@ message GetContactRequest {
   atlas.rpc.Identifier id = 1;
 }
 
+message GetContactResponse {
+  Contact result = 1;
+}
+
 message CreateContactRequest {
   Contact payload = 1;
 }
@@ -81,6 +85,15 @@ message UpdateContactRequest {
 }
 
 message UpdateContactResponse {
+  Contact result = 1;
+}
+
+message GetPrivateContactRequest {
+  // Unique ID number for this contact.
+  atlas.rpc.Identifier id = 1;
+}
+
+message GetPrivateContactResponse {
   Contact result = 1;
 }
 
@@ -136,7 +149,7 @@ message MimicObjectHidden {
 }
 
 service ContactService {
-  rpc Get (GetContactRequest) returns (Contact) {
+  rpc Get (GetContactRequest) returns (GetContactResponse) {
     option (google.api.http) = {
       get: "/contact/{id.resource_id}"
     };
@@ -175,6 +188,21 @@ service ContactService {
         patch: "/contact/{payload.id.resource_id}"
         body: "payload"
       }
+    };
+  }
+
+
+  /* Test private option.
+
+  Use this method to check if an RPC tagged as private is excluded from
+  generated OpenAPI document.
+  */
+  rpc GetPrivate (GetPrivateContactRequest) returns (GetPrivateContactResponse) {
+    option (google.api.http) = {
+      get: "/private/contact/{id.resource_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "private"
     };
   }
 

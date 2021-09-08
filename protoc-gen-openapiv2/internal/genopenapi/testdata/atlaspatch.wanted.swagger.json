@@ -67,7 +67,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/testdataContact"
+              "$ref": "#/definitions/testdataGetContactResponse"
             }
           }
         }
@@ -286,6 +286,7 @@
         "WORK"
       ]
     },
+    "MimicObjectRequestMimicRequestEnum": {},
     "MimicObjectResponseMimicResponseEnum": {
       "type": "string",
       "default": "VALUE_ONE",
@@ -341,6 +342,14 @@
       }
     },
     "testdataCreateContactResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/testdataContact"
+        }
+      }
+    },
+    "testdataGetContactResponse": {
       "type": "object",
       "properties": {
         "result": {
