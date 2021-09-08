@@ -254,9 +254,6 @@ The service-defined string used to identify a page of resources. A null value in
 					}
 				}
 			}
-
-			op.ID = strings.Join(op.Tags, "") + op.ID
-
 		}
 
 		pitem := fixedPaths[pn]

@@ -27,7 +27,7 @@
           "ContactService"
         ],
         "summary": "Create a contact.",
-        "operationId": "ContactServiceContactService_Create",
+        "operationId": "ContactService_Create",
         "parameters": [
           {
             "name": "body",
@@ -53,7 +53,7 @@
         "tags": [
           "ContactService"
         ],
-        "operationId": "ContactServiceContactService_Get",
+        "operationId": "ContactService_Get",
         "parameters": [
           {
             "type": "integer",
@@ -81,7 +81,7 @@
           "ContactService"
         ],
         "summary": "List contacts.",
-        "operationId": "ContactServiceContactService_List",
+        "operationId": "ContactService_List",
         "parameters": [
           {
             "type": "string",
@@ -137,7 +137,7 @@
           "ContactService"
         ],
         "summary": "Test getting objects with mimicked primitive types.",
-        "operationId": "ContactServiceContactService_GetMimic",
+        "operationId": "ContactService_GetMimic",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -155,7 +155,7 @@
           "ContactService"
         ],
         "summary": "Test posting objects with mimicked primitive types.",
-        "operationId": "ContactServiceContactService_PostMimic",
+        "operationId": "ContactService_PostMimic",
         "parameters": [
           {
             "type": "string",
