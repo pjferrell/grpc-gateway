@@ -196,7 +196,6 @@ func Test_generator_Generate(t *testing.T) {
 
 		// TODO
 		// test private methods
-		// comments extraction
 
 	}
 
